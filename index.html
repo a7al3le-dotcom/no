@@ -1,37 +1,26 @@
 <!DOCTYPE html>
 <html lang="ar" hreflang="ar-sa" style="height: 100%;">
 <head>
-  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
   <title>شات نوف</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta property="og:image" content="prv1.png">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <meta name="google" value="notranslate">
-  <meta name="HandheldFriendly" content="True">
-  <meta name="viewport" content="user-scalable=0, width=400">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <!-- خط Tajawal -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet" />
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <style>
-    html {
-                font-family: sans-serif;
-                -ms-text-size-adjust: 100%;
-                -webkit-text-size-adjust: 100%
-            }
+    body {
+      margin: 0;
+      font-family: 'Tajawal', sans-serif;
+    }
 
-            body {
-                margin: 0
-            }
+    /* إخفاء اسم المستخدم */
+    #usernameDisplay {
+      display: none !important;
+    }
 
-    /* حاوية الأزرار */
     #topButtons {
       position: fixed;
       top: 10px;
@@ -39,29 +28,15 @@
       display: flex;
       gap: 8px;
       z-index: 1000;
-      user-select: none;
     }
 
     .btn {
-      border: 1px solid #ccc;
-      background: white;
       padding: 6px 12px;
+      background: white;
+      border: 1px solid #ccc;
       border-radius: 20px;
-      font-size: 14px;
       cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: background-color 0.2s ease;
-    }
-    .btn:hover {
-      background: #f0f5ff;
-    }
-
-    #count {
-      font-weight: bold;
-      color: #3366cc;
+      font-size: 14px;
     }
 
     #usersBox {
@@ -70,37 +45,16 @@
       right: 10px;
       background: white;
       border: 1px solid #ccc;
-      border-radius: 8px;
       padding: 10px;
+      border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       z-index: 999;
-      min-width: 150px;
-      max-width: 200px;
       display: none;
-      font-family: 'Tajawal', sans-serif;
-      direction: rtl;
-    }
-
-    #usersBox h4 {
-      margin: 0 0 8px 0;
-      text-align: center;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 5px;
     }
 
     #usersList {
       max-height: 200px;
       overflow-y: auto;
-    }
-
-    .user-item {
-      padding: 4px 0;
-      border-bottom: 1px solid #f0f0f0;
-      user-select: none;
-    }
-
-    .user-item:last-child {
-      border-bottom: none;
     }
 
     #overlay {
@@ -114,36 +68,22 @@
       display: none;
     }
 
-    #usernameDisplay {
-      padding: 10px 15px;
-      border-bottom: 1px solid #eee;
-      font-size: 18px;
-      font-weight: bold;
-      color: #3366cc;
-      user-select: none;
-      direction: rtl;
-      background: #f9f9f9;
-      margin-top: 50px; /* عشان لا يتغطى بالأزرار */
-    }
-
     #messages {
-      flex: 1;
       overflow-y: auto;
       padding: 10px;
+      padding-bottom: 70px; /* مساحة للمدخل */
       background: #fff;
       direction: ltr;
+      font-family: 'Tajawal', sans-serif;
+      height: calc(100vh - 60px);
     }
 
     .msg {
-      margin: 6px 0;
       display: flex;
-      justify-content: flex-start;
       gap: 10px;
-      align-items: center;
-      direction: ltr;
-      text-align: left;
+      margin: 6px 0;
       font-size: 15px;
-      font-family: 'Tajawal', sans-serif;
+      align-items: center;
     }
 
     .sys {
@@ -156,7 +96,6 @@
     .user {
       font-weight: bold;
       color: #3366cc;
-      user-select: none;
     }
 
     .time {
@@ -165,6 +104,10 @@
     }
 
     #inputArea {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -172,6 +115,7 @@
       border-top: 1px solid #ddd;
       padding: 6px;
       background: #fafafa;
+      z-index: 999;
     }
 
     #messageInput {
@@ -179,25 +123,16 @@
       font-size: 16px;
       padding: 8px;
       border: 1px solid #ccc;
-      border-radius: 0; /* حواف مربعة */
-      font-family: 'Tajawal', sans-serif;
-      outline-offset: -2px;
+      outline: none;
     }
 
     #sendBtn {
       padding: 8px 12px;
+      background: #f0f0f0;
       border: 1px solid #ccc;
-      border-radius: 0; /* حواف مربعة */
-      background: #f9f9f9;
       cursor: pointer;
-      font-family: 'Tajawal', sans-serif;
-      user-select: none;
-    }
-    #sendBtn:hover {
-      background: #e6f0ff;
     }
 
-    /* نافذة تغيير الاسم */
     #editNameModal {
       position: fixed;
       top: 50%;
@@ -210,36 +145,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       z-index: 2000;
       display: none;
-      direction: rtl;
-      width: 280px;
-    }
-    #editNameModal label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-      color: #333;
-    }
-    #editNameModal input {
-      width: 100%;
-      padding: 8px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-family: 'Tajawal', sans-serif;
-    }
-    #editNameModal button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      font-size: 16px;
-      border: none;
-      background: #3366cc;
-      color: white;
-      cursor: pointer;
-      border-radius: 4px;
-      user-select: none;
-    }
-    #editNameModal button:hover {
-      background: #254b8b;
     }
   </style>
 </head>
@@ -254,6 +159,7 @@
     <h4>المتصلين الآن</h4>
     <div id="usersList"></div>
   </div>
+
   <div id="overlay"></div>
 
   <div id="usernameDisplay"></div>
@@ -265,7 +171,6 @@
     <button id="sendBtn">إرسال</button>
   </div>
 
-  <!-- مودال تغيير الاسم -->
   <div id="editNameModal">
     <label for="newNameInput">تغيير اسم المستخدم:</label>
     <input type="text" id="newNameInput" maxlength="20" />
@@ -274,17 +179,21 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
-  authDomain: "studio-4914109762-6a41f.firebaseapp.com",
-  projectId: "studio-4914109762-6a41f",
-  storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
-  messagingSenderId: "134781295069",
-  appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
-};
+      apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
+      authDomain: "studio-4914109762-6a41f.firebaseapp.com",
+      projectId: "studio-4914109762-6a41f",
+      storageBucket: "studio-4914109762-6a41f.appspot.com",
+      messagingSenderId: "134781295069",
+      appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let username = "زائر_" + Math.floor(Math.random() * 1000);
+    let userRef = db.ref("online/" + username);
+    userRef.set(true);
+    userRef.onDisconnect().remove();
 
     const usernameDisplay = document.getElementById("usernameDisplay");
     const onlineListBtn = document.getElementById("onlineListBtn");
@@ -300,31 +209,17 @@
     const newNameInput = document.getElementById("newNameInput");
     const saveNameBtn = document.getElementById("saveNameBtn");
 
-    function displayUsername() {
-      usernameDisplay.textContent = "اسمك: " + username;
-    }
-    displayUsername();
-
-    let userRef = db.ref("online/" + username);
-    userRef.set(true);
-    userRef.onDisconnect().remove();
-
     function updateUsername(newName) {
-      if (!newName) return;
-      if (newName === username) return;
-
+      if (!newName || newName === username) return;
       userRef.remove();
-
       username = newName;
       userRef = db.ref("online/" + username);
       userRef.set(true);
       userRef.onDisconnect().remove();
-
-      displayUsername();
       showSystemMsg(`✏️ تم تغيير الاسم إلى ${username}`);
     }
 
-    onlineListBtn.onclick = function (e) {
+    onlineListBtn.onclick = (e) => {
       e.stopPropagation();
       toggleUsersBox();
     };
@@ -365,35 +260,28 @@
       overlay.style.display = "none";
     }
 
-    db.ref("online").on("child_added", (snap) => {
-      const user = snap.key;
-      if(user !== username) showSystemMsg(`📥 ${user} دخل الدردشة`);
-      updateUsersList();
-    });
-
-    db.ref("online").on("child_removed", (snap) => {
-      const user = snap.key;
-      if(user !== username) showSystemMsg(`📤 ${user} غادر الدردشة`);
-      updateUsersList();
-    });
-
-    function updateUsersList() {
-      db.ref("online")
-        .once("value", (snap) => {
-          const users = snap.val() ? Object.keys(snap.val()) : [];
-          usersList.innerHTML = "";
-          users.forEach((user) => {
-            const userItem = document.createElement("div");
-            userItem.className = "user-item";
-            userItem.textContent = user;
-            usersList.appendChild(userItem);
-          });
-        });
+    function openEditNameModal() {
+      newNameInput.value = username;
+      editNameModal.style.display = "block";
+      overlay.style.display = "block";
+      newNameInput.focus();
+      newNameInput.select();
     }
 
-    db.ref("online").on("value", (snap) => {
-      const users = snap.val() ? Object.keys(snap.val()) : [];
-      count.textContent = users.length;
+    function closeEditNameModal() {
+      editNameModal.style.display = "none";
+      overlay.style.display = "none";
+    }
+
+    saveNameBtn.onclick = () => {
+      const newName = newNameInput.value.trim();
+      if (!newName) return alert("الرجاء إدخال اسم صحيح.");
+      updateUsername(newName);
+      closeEditNameModal();
+    };
+
+    newNameInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") saveNameBtn.click();
     });
 
     sendBtn.onclick = sendMessage;
@@ -410,22 +298,6 @@
       messageInput.value = "";
       closeUsersBox();
     }
-
-    const messagesRef = db.ref("messages").limitToLast(20);
-    messagesRef.on("child_added", (snap) => {
-      const msg = snap.val();
-      addMessage(msg.user, msg.text, msg.time);
-    });
-
-    db.ref("messages").on("value", (snap) => {
-      const all = snap.val();
-      if (!all) return;
-      const keys = Object.keys(all);
-      if (keys.length > 20) {
-        const excess = keys.slice(0, keys.length - 20);
-        excess.forEach((k) => db.ref("messages/" + k).remove());
-      }
-    });
 
     function addMessage(user, text, time) {
       const div = document.createElement("div");
@@ -458,38 +330,51 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    function openEditNameModal() {
-      newNameInput.value = username;
-      editNameModal.style.display = "block";
-      overlay.style.display = "block";
-      newNameInput.focus();
-      newNameInput.select();
-    }
-
-    function closeEditNameModal() {
-      editNameModal.style.display = "none";
-      overlay.style.display = "none";
-    }
-
-    saveNameBtn.onclick = () => {
-      const newName = newNameInput.value.trim();
-      if (!newName) return alert("الرجاء إدخال اسم صحيح.");
-      if (newName === username) {
-        closeEditNameModal();
-        return;
-      }
-      updateUsername(newName);
-      closeEditNameModal();
-    };
-
-    newNameInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        saveNameBtn.click();
-      }
+    db.ref("online").on("child_added", (snap) => {
+      const user = snap.key;
+      if(user !== username) showSystemMsg(`📥 ${user} دخل الدردشة`);
+      updateUsersList();
     });
 
-    // عرض اسم المستخدم في الأعلى (غير قابل للنقر الآن)
-    displayUsername();
+    db.ref("online").on("child_removed", (snap) => {
+      const user = snap.key;
+      if(user !== username) showSystemMsg(`📤 ${user} غادر الدردشة`);
+      updateUsersList();
+    });
+
+    db.ref("online").on("value", (snap) => {
+      const users = snap.val() ? Object.keys(snap.val()) : [];
+      count.textContent = users.length;
+    });
+
+    function updateUsersList() {
+      db.ref("online").once("value", (snap) => {
+        const users = snap.val() ? Object.keys(snap.val()) : [];
+        usersList.innerHTML = "";
+        users.forEach((user) => {
+          const userItem = document.createElement("div");
+          userItem.className = "user-item";
+          userItem.textContent = user;
+          usersList.appendChild(userItem);
+        });
+      });
+    }
+
+    const messagesRef = db.ref("messages").limitToLast(20);
+    messagesRef.on("child_added", (snap) => {
+      const msg = snap.val();
+      addMessage(msg.user, msg.text, msg.time);
+    });
+
+    db.ref("messages").on("value", (snap) => {
+      const all = snap.val();
+      if (!all) return;
+      const keys = Object.keys(all);
+      if (keys.length > 20) {
+        const excess = keys.slice(0, keys.length - 20);
+        excess.forEach((k) => db.ref("messages/" + k).remove());
+      }
+    });
   </script>
 </body>
 </html>
