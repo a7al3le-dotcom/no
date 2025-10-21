@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
   <style>
     body { margin: 0; font-family: 'Tajawal', sans-serif; overflow: hidden; }
@@ -39,8 +40,16 @@
       flex-shrink: 0;
       touch-action: none;
     }
-    .video-body { width: 100%; background: #000; }
-    .video-body iframe, .video-body video { width: 100%; height: 100%; border: none; display: block; aspect-ratio: 16 / 9; }
+    .video-body { 
+        width: 100%; 
+        background: #000; 
+    }
+    .video-body iframe, .video-body video { 
+        width: 100%; 
+        height: 100%; 
+        border: none; 
+        display: block; 
+    }
     .close-pinned-video {
       background: #d9534f; border: 1px solid #d43f3a; color: white;
       border-radius: 50%; width: 22px; height: 22px;
@@ -76,7 +85,7 @@
     <div id="pinnedVideoPlayer"></div>
     <div id="setVideoModal">
         <h4>تثبيت فيديو للجميع</h4>
-        <input type="text" id="videoUrlInput" placeholder="ضع رابط يوتيوب، تويتر، أو M3U"/>
+        <input type="text" id="videoUrlInput" placeholder="ادخل رابط يوتيوب، تويتر، M3U، أو MP4"/>
         <button id="submitVideoUrlBtn">تثبيت</button>
     </div>
     <div id="usersBox"><h4>المتصلين الآن</h4><div id="usersList"></div></div>
@@ -292,26 +301,22 @@
             
             makeDraggable(pinnedVideoPlayer, header);
 
-            const createAndAppendVideo = (src) => {
+            const createAndAppendVideo = (src, aspectRatio = "16 / 9") => {
                 const video = document.createElement('video');
                 video.src = src;
                 video.controls = true;
                 video.autoplay = true;
                 video.muted = true;
+                video.style.aspectRatio = aspectRatio;
                 video.setAttribute('playsinline', '');
                 body.appendChild(video);
                 return video;
             };
 
             if (data.type === 'youtube') {
-                body.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.id}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                body.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.id}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen style="aspect-ratio: 16 / 9;"></iframe>`;
             } else if (data.type === 'm3u' || data.type === 'direct') {
-                const video = createAndAppendVideo(data.url);
-                if (data.type === 'm3u' && Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(data.url);
-                    hls.attachMedia(video);
-                }
+                createAndAppendVideo(data.url);
             } else if (data.type === 'twitter') {
                 try {
                     const response = await fetch(`https://api.vxtwitter.com/i/status/${data.id}`);
@@ -319,9 +324,10 @@
                     
                     const mediaItems = tweetData.media_extended;
                     if (mediaItems && mediaItems.length > 0) {
-                        const playMedia = (mediaUrl, clickedButton) => {
+                        const playMedia = (mediaItem, clickedButton) => {
                             body.innerHTML = '';
-                            createAndAppendVideo(mediaUrl);
+                            const aspectRatio = mediaItem.width / mediaItem.height;
+                            createAndAppendVideo(mediaItem.url, aspectRatio);
                             if (selectorContainer) {
                                 selectorContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                                 if (clickedButton) clickedButton.classList.add('active');
@@ -335,13 +341,13 @@
                             mediaItems.forEach((item, index) => {
                                 const button = document.createElement('button');
                                 button.innerText = `المقطع ${index + 1}`;
-                                button.onclick = () => playMedia(item.url, button);
+                                button.onclick = () => playMedia(item, button);
                                 selectorContainer.appendChild(button);
                             });
                             pinnedVideoPlayer.appendChild(selectorContainer);
                             body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:white;font-size:14px;aspect-ratio:16/9;">اختر مقطعاً</div>`;
                         } else {
-                            playMedia(mediaItems[0].url, null);
+                            playMedia(mediaItems[0], null);
                         }
                     } else {
                         body.innerHTML = `<p style="color:white;padding:10px;">لم يتم العثور على فيديو في هذه التغريدة.</p>`;
