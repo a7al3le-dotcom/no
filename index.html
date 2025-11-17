@@ -47,34 +47,38 @@
         position: fixed; 
         top: 100px; 
         left: 100px; 
-        width: 600px; 
-        height: 400px;
-        background: #f0f0f0; 
-        border: 1px solid #ccc; 
-        border-radius: 8px; 
-        box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
-        z-index: 998; 
+        width: 640px; 
+        height: 360px;
+        background: #000; 
+        border: 2px solid #337ab7; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
+        z-index: 9998; 
         display: none; 
         flex-direction: column;
-        transition: all 0.3s ease;
-        resize: both;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
-        min-width: 300px;
-        min-height: 200px;
+        resize: both;
+        min-width: 320px;
+        min-height: 180px;
+        max-width: 95vw;
+        max-height: 95vh;
     }
     
     .video-player.mini {
-        width: 300px !important;
-        height: 200px !important;
+        width: 320px !important;
+        height: 180px !important;
         bottom: 20px;
         right: 20px;
         top: auto !important;
         left: auto !important;
+        transform: none !important;
+        border: 1px solid #666;
     }
     
     .video-player.normal {
-        width: 600px !important;
-        height: 400px !important;
+        width: 640px !important;
+        height: 360px !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
@@ -88,14 +92,13 @@
         transform: none !important;
         z-index: 9999;
         border-radius: 0;
+        border: none;
     }
     
     .video-header { 
-        background-color: #337ab7; 
+        background: linear-gradient(135deg, #337ab7, #2e6da4); 
         color: white; 
-        padding: 5px 10px; 
-        border-top-left-radius: 7px; 
-        border-top-right-radius: 7px; 
+        padding: 8px 12px; 
         cursor: move; 
         display: flex; 
         justify-content: space-between; 
@@ -103,43 +106,48 @@
         flex-shrink: 0; 
         touch-action: none; 
         user-select: none;
+        font-weight: bold;
     }
     
     .video-controls {
         display: flex;
-        gap: 5px;
+        gap: 8px;
+        align-items: center;
     }
     
     .control-btn {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.15);
         border: none;
         color: white;
-        width: 24px;
-        height: 24px;
-        border-radius: 3px;
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 12px;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
     }
     
     .control-btn:hover {
-        background: rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.25);
+        transform: scale(1.1);
     }
     
-    .adblock-btn {
-        background: #4CAF50 !important;
+    .control-btn:active {
+        transform: scale(0.95);
     }
     
     .adblock-btn.active {
-        background: #2196F3 !important;
+        background: #4CAF50;
         animation: pulse 2s infinite;
     }
     
     @keyframes pulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+        50% { transform: scale(1.1); }
         100% { transform: scale(1); }
     }
     
@@ -150,6 +158,9 @@
         flex: 1;
         position: relative;
         overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .video-body iframe, 
@@ -162,67 +173,161 @@
     
     .close-pinned-video { 
         background: #d9534f; 
-        border: 1px solid #d43f3a; 
+        border: none; 
         color: white; 
-        border-radius: 50%; 
-        width: 22px; 
-        height: 22px; 
+        border-radius: 4px; 
+        width: 28px; 
+        height: 28px; 
         cursor: pointer; 
         font-size: 14px; 
-        line-height: 20px; 
-        text-align: center; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .close-pinned-video:hover {
+        background: #c9302c;
+        transform: scale(1.1);
     }
     
     .video-selector { 
         display: flex; 
         gap: 5px; 
-        padding: 5px; 
-        background: #e9ecef; 
-        border-bottom-left-radius: 7px; 
-        border-bottom-right-radius: 7px; 
+        padding: 8px; 
+        background: rgba(51, 122, 183, 0.1);
+        border-top: 1px solid #eee;
         flex-shrink: 0; 
     }
     
     .video-selector button { 
         flex: 1; 
-        padding: 5px; 
-        font-size: 12px; 
+        padding: 6px 8px; 
+        font-size: 11px; 
         background: #fff; 
-        border: 1px solid #ccc; 
+        border: 1px solid #ddd; 
         border-radius: 4px; 
         cursor: pointer; 
+        transition: all 0.2s ease;
+    }
+    
+    .video-selector button:hover {
+        background: #f0f0f0;
     }
     
     .video-selector button.active { 
-        background-color: #337ab7; 
+        background: #337ab7; 
         color: white; 
         border-color: #2e6da4; 
     }
     
+    /* مقابض التكبير والتصغير */
     .resize-handle {
         position: absolute;
-        width: 10px;
-        height: 10px;
-        background: #337ab7;
-        border-radius: 50%;
+        background: rgba(51, 122, 183, 0.8);
+        border: 1px solid white;
         z-index: 1000;
+        transition: all 0.2s ease;
     }
     
-    .resize-handle.top-left { top: -5px; left: -5px; cursor: nw-resize; }
-    .resize-handle.top-right { top: -5px; right: -5px; cursor: ne-resize; }
-    .resize-handle.bottom-left { bottom: -5px; left: -5px; cursor: sw-resize; }
-    .resize-handle.bottom-right { bottom: -5px; right: -5px; cursor: se-resize; }
+    .resize-handle:hover {
+        background: rgba(51, 122, 183, 1);
+    }
+    
+    .resize-handle.top-left { 
+        top: -4px; 
+        left: -4px; 
+        width: 12px; 
+        height: 12px; 
+        cursor: nw-resize; 
+        border-radius: 0 0 8px 0;
+    }
+    
+    .resize-handle.top-right { 
+        top: -4px; 
+        right: -4px; 
+        width: 12px; 
+        height: 12px; 
+        cursor: ne-resize; 
+        border-radius: 0 0 0 8px;
+    }
+    
+    .resize-handle.bottom-left { 
+        bottom: -4px; 
+        left: -4px; 
+        width: 12px; 
+        height: 12px; 
+        cursor: sw-resize; 
+        border-radius: 0 8px 0 0;
+    }
+    
+    .resize-handle.bottom-right { 
+        bottom: -4px; 
+        right: -4px; 
+        width: 12px; 
+        height: 12px; 
+        cursor: se-resize; 
+        border-radius: 8px 0 0 0;
+    }
+    
+    .resize-handle.top { 
+        top: -4px; 
+        left: 50%; 
+        transform: translateX(-50%);
+        width: 30px; 
+        height: 6px; 
+        cursor: n-resize; 
+        border-radius: 3px;
+    }
+    
+    .resize-handle.bottom { 
+        bottom: -4px; 
+        left: 50%; 
+        transform: translateX(-50%);
+        width: 30px; 
+        height: 6px; 
+        cursor: s-resize; 
+        border-radius: 3px;
+    }
+    
+    .resize-handle.left { 
+        left: -4px; 
+        top: 50%; 
+        transform: translateY(-50%);
+        width: 6px; 
+        height: 30px; 
+        cursor: w-resize; 
+        border-radius: 3px;
+    }
+    
+    .resize-handle.right { 
+        right: -4px; 
+        top: 50%; 
+        transform: translateY(-50%);
+        width: 6px; 
+        height: 30px; 
+        cursor: e-resize; 
+        border-radius: 3px;
+    }
     
     .ad-notification {
         position: absolute;
         top: 10px;
         right: 10px;
-        background: rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.85);
         color: white;
-        padding: 10px;
-        border-radius: 5px;
+        padding: 8px 12px;
+        border-radius: 6px;
         z-index: 10000;
         font-size: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
     
     #adblockSettings {
@@ -232,11 +337,11 @@
         transform: translate(-50%, -50%);
         background: white;
         padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         z-index: 1004;
         display: none;
-        width: 300px;
+        width: 320px;
     }
     
     .setting-item {
@@ -248,20 +353,28 @@
         align-items: center;
         gap: 8px;
         cursor: pointer;
+        font-size: 14px;
     }
     
     .setting-item select {
         width: 100%;
-        padding: 8px;
+        padding: 8px 12px;
         border: 1px solid #ddd;
-        border-radius: 4px;
+        border-radius: 6px;
+        font-size: 14px;
     }
     
     .stats {
-        background: #f5f5f5;
-        padding: 10px;
-        border-radius: 4px;
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
         margin-top: 15px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .stats p {
+        margin: 5px 0;
+        font-size: 13px;
     }
     
     #inputArea { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; border-top: 1px solid #ddd; padding: 6px; background: #fafafa; z-index: 999; }
@@ -315,7 +428,7 @@
         <!-- المشغل المتطور -->
         <div id="pinnedVideoPlayer" class="video-player normal">
             <div class="video-header">
-                <span>بث مباشر</span>
+                <span>🎥 بث مباشر</span>
                 <div class="video-controls">
                     <button class="control-btn minimize" title="تصغير">🗕</button>
                     <button class="control-btn maximize" title="تكبير">🗖</button>
@@ -326,9 +439,14 @@
             <div class="video-body">
                 <!-- محتوى الفيديو يظهر هنا -->
             </div>
+            <!-- مقابض التكبير والتصغير من جميع الجهات -->
             <div class="resize-handle top-left"></div>
+            <div class="resize-handle top"></div>
             <div class="resize-handle top-right"></div>
+            <div class="resize-handle left"></div>
+            <div class="resize-handle right"></div>
             <div class="resize-handle bottom-left"></div>
+            <div class="resize-handle bottom"></div>
             <div class="resize-handle bottom-right"></div>
         </div>
         
@@ -364,7 +482,7 @@
                 <p>⏱️ الوقت المُوفر: <span id="timeSaved">0 دقيقة</span></p>
             </div>
             
-            <button id="saveAdblockSettings" style="width:100%;padding:10px;margin-top:10px;">حفظ الإعدادات</button>
+            <button id="saveAdblockSettings" style="width:100%;padding:10px;margin-top:10px;background:#337ab7;color:white;border:none;border-radius:6px;cursor:pointer;">حفظ الإعدادات</button>
         </div>
         
         <div id="setVideoModal"><h4>تثبيت فيديو للجميع</h4><input type="text" id="videoUrlInput" placeholder="ادخل رابط يوتيوب، تويتر، M3U، أو MP4"/><button id="submitVideoUrlBtn">تثبيت</button></div>
@@ -473,52 +591,65 @@
         const submitVideoUrlBtn = document.getElementById("submitVideoUrlBtn"); 
         const pinnedVideoPlayer = document.getElementById("pinnedVideoPlayer");
         
-        // عناصر المشغل المتطور
-        const minimizeBtn = document.querySelector('.minimize');
-        const maximizeBtn = document.querySelector('.maximize');
-        const adblockBtn = document.querySelector('.adblock-btn');
-        const closeVideoBtn = document.querySelector('.close-pinned-video');
-        const adblockSettings = document.getElementById('adblockSettings');
-        const saveAdblockSettings = document.getElementById('saveAdblockSettings');
-        
         let onlineUsersCache = {}; let idleTimer; const IDLE_TIMEOUT = 2 * 60 * 1000;
         let initialUsersLoaded = false; 
 
-        // نظام AdBlock
+        // نظام AdBlock المتطور
         class VideoAdBlocker {
             constructor() {
-                this.adsBlocked = 0;
-                this.timeSaved = 0;
-                this.isActive = true;
+                this.adsBlocked = parseInt(localStorage.getItem('adsBlocked')) || 0;
+                this.timeSaved = parseInt(localStorage.getItem('timeSaved')) || 0;
+                this.isActive = localStorage.getItem('adblockActive') !== 'false';
                 this.blockedDomains = [
                     'googlesyndication.com',
                     'doubleclick.net',
                     'googleadservices.com',
-                    'adservice.google.com'
+                    'adservice.google.com',
+                    'youtube.com/api/stats/ads',
+                    'pagead2.googlesyndication.com'
                 ];
                 this.setupAdBlocking();
+                this.updateStats();
             }
 
             setupAdBlocking() {
+                if (!this.isActive) return;
+
                 // حظر طلبات الشبكة للإعلانات
                 const originalFetch = window.fetch;
                 window.fetch = (...args) => {
                     const url = args[0];
                     if (this.isAdUrl(url)) {
-                        this.adsBlocked++;
-                        this.updateStats();
-                        this.showAdNotification();
+                        this.blockAd();
                         return Promise.reject(new Error('Ad blocked'));
                     }
                     return originalFetch.apply(this, args);
                 };
 
-                // مراقبة DOM للإعلانات الديناميكية
+                // اعتراض XMLHttpRequest
+                const originalXHR = window.XMLHttpRequest;
+                window.XMLHttpRequest = function() {
+                    const xhr = new originalXHR();
+                    const originalOpen = xhr.open;
+                    xhr.open = function(method, url) {
+                        if (this.isAdUrl(url)) {
+                            this.blockAd();
+                            return;
+                        }
+                        return originalOpen.apply(this, arguments);
+                    }.bind(this);
+                    return xhr;
+                }.bind(this);
+
                 this.setupDOMMonitoring();
+                this.setupYouTubeAdBlock();
             }
 
             isAdUrl(url) {
-                return this.blockedDomains.some(domain => url.includes(domain));
+                if (!url) return false;
+                return this.blockedDomains.some(domain => 
+                    typeof url === 'string' && url.includes(domain)
+                );
             }
 
             setupDOMMonitoring() {
@@ -538,96 +669,323 @@
                 });
             }
 
+            setupYouTubeAdBlock() {
+                // كشف وإزالة إعلانات يوتيوب
+                setInterval(() => {
+                    // إعلانات الفيديو
+                    const videoAds = document.querySelector('.ad-showing, .ad-interrupting');
+                    if (videoAds) {
+                        const video = document.querySelector('video');
+                        if (video) {
+                            video.currentTime = video.duration;
+                            this.blockAd();
+                        }
+                    }
+
+                    // الإعلانات المنبثقة
+                    const popupAds = document.querySelector('.ytp-ad-module, .ytp-ad-overlay-container');
+                    if (popupAds) {
+                        popupAds.remove();
+                        this.blockAd();
+                    }
+                }, 1000);
+            }
+
             checkForAds(element) {
-                // كشف الإعلانات في يوتيوب
-                if (element.classList && (
-                    element.classList.contains('ad-showing') ||
-                    element.classList.contains('ytp-ad-module')
-                )) {
-                    element.remove();
-                    this.adsBlocked++;
-                    this.updateStats();
-                    this.showAdNotification();
-                }
+                // كشف العناصر الإعلانية
+                const adSelectors = [
+                    '.ad', '[class*="ad-"]', '[id*="ad-"]',
+                    '.advertisement', '.ad-container',
+                    '.ytp-ad-module', '.ytp-ad-overlay-container'
+                ];
+
+                adSelectors.forEach(selector => {
+                    const ads = element.querySelectorAll ? element.querySelectorAll(selector) : [];
+                    ads.forEach(ad => {
+                        ad.remove();
+                        this.blockAd();
+                    });
+                });
+
+                // كشف iframes إعلانية
+                const iframes = element.querySelectorAll ? element.querySelectorAll('iframe') : [];
+                iframes.forEach(iframe => {
+                    try {
+                        const src = iframe.src;
+                        if (this.isAdUrl(src)) {
+                            iframe.remove();
+                            this.blockAd();
+                        }
+                    } catch (e) {}
+                });
+            }
+
+            blockAd() {
+                this.adsBlocked++;
+                this.timeSaved += 0.5; // تقدير الوقت المُوفر
+                this.updateStats();
+                this.showAdNotification();
             }
 
             updateStats() {
                 document.getElementById('adsBlockedCount').textContent = this.adsBlocked;
-                document.getElementById('timeSaved').textContent = Math.floor(this.adsBlocked * 0.5) + ' دقيقة';
+                document.getElementById('timeSaved').textContent = Math.floor(this.timeSaved) + ' دقيقة';
+                
+                // حفظ في localStorage
+                localStorage.setItem('adsBlocked', this.adsBlocked);
+                localStorage.setItem('timeSaved', this.timeSaved);
             }
 
             showAdNotification() {
+                const existingNotification = document.querySelector('.ad-notification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+
                 const notification = document.createElement('div');
                 notification.className = 'ad-notification';
                 notification.textContent = `🛡️ تم حظر إعلان (${this.adsBlocked})`;
                 document.body.appendChild(notification);
                 
                 setTimeout(() => {
-                    notification.remove();
+                    notification.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => notification.remove(), 300);
                 }, 2000);
             }
 
             toggle() {
                 this.isActive = !this.isActive;
+                localStorage.setItem('adblockActive', this.isActive);
+                
+                const adblockBtn = document.querySelector('.adblock-btn');
                 adblockBtn.classList.toggle('active', this.isActive);
+                
+                if (this.isActive) {
+                    this.setupAdBlocking();
+                }
             }
         }
 
-        // تهيئة AdBlock
-        const adBlocker = new VideoAdBlocker();
-
-        // نظام التحكم بالمشغل
+        // نظام المشغل المتطور
         class AdvancedVideoPlayer {
             constructor() {
                 this.currentMode = 'normal';
                 this.isDragging = false;
                 this.isResizing = false;
                 this.dragOffset = { x: 0, y: 0 };
+                this.resizeData = null;
                 this.setupEventListeners();
+                this.updateControlButtons();
             }
 
             setupEventListeners() {
+                const header = pinnedVideoPlayer.querySelector('.video-header');
+                
                 // السحب
-                const header = document.querySelector('.video-header');
                 header.addEventListener('mousedown', this.startDrag.bind(this));
+                header.addEventListener('touchstart', this.startDrag.bind(this));
+                
                 document.addEventListener('mousemove', this.drag.bind(this));
+                document.addEventListener('touchmove', this.drag.bind(this));
                 document.addEventListener('mouseup', this.stopDrag.bind(this));
+                document.addEventListener('touchend', this.stopDrag.bind(this));
 
                 // التحكم بالحجم
+                const minimizeBtn = pinnedVideoPlayer.querySelector('.minimize');
+                const maximizeBtn = pinnedVideoPlayer.querySelector('.maximize');
+                const adblockBtn = pinnedVideoPlayer.querySelector('.adblock-btn');
+                const closeBtn = pinnedVideoPlayer.querySelector('.close-pinned-video');
+
                 minimizeBtn.addEventListener('click', () => this.setMode('mini'));
                 maximizeBtn.addEventListener('click', () => this.setMode('full'));
-                adblockBtn.addEventListener('click', () => adblockSettings.style.display = 'block');
+                adblockBtn.addEventListener('click', () => adBlocker.toggle());
+                closeBtn.addEventListener('click', () => db.ref("pinned_video").remove());
 
                 // إعدادات AdBlock
+                const saveAdblockSettings = document.getElementById('saveAdblockSettings');
                 saveAdblockSettings.addEventListener('click', () => {
-                    adblockSettings.style.display = 'none';
+                    document.getElementById('adblockSettings').style.display = 'none';
                     overlay.style.display = 'none';
                 });
+
+                // مقابض التكبير والتصغير
+                this.setupResizeHandles();
             }
 
-            setMode(mode) {
-                this.currentMode = mode;
-                pinnedVideoPlayer.className = `video-player ${mode}`;
+            setupResizeHandles() {
+                const handles = pinnedVideoPlayer.querySelectorAll('.resize-handle');
                 
-                // تحديث أزرار التحكم
-                minimizeBtn.style.opacity = mode === 'mini' ? '0.5' : '1';
-                maximizeBtn.style.opacity = mode === 'full' ? '0.5' : '1';
+                handles.forEach(handle => {
+                    handle.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.startResize(e, handle.classList);
+                    });
+                    
+                    handle.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.startResize(e, handle.classList);
+                    });
+                });
+
+                document.addEventListener('mousemove', this.resize.bind(this));
+                document.addEventListener('touchmove', this.resize.bind(this));
+                document.addEventListener('mouseup', this.stopResize.bind(this));
+                document.addEventListener('touchend', this.stopResize.bind(this));
+            }
+
+            startResize(e, classList) {
+                this.isResizing = true;
+                this.resizeData = {
+                    startX: e.clientX || e.touches[0].clientX,
+                    startY: e.clientY || e.touches[0].clientY,
+                    startWidth: parseInt(getComputedStyle(pinnedVideoPlayer).width, 10),
+                    startHeight: parseInt(getComputedStyle(pinnedVideoPlayer).height, 10),
+                    startLeft: parseInt(getComputedStyle(pinnedVideoPlayer).left, 10),
+                    startTop: parseInt(getComputedStyle(pinnedVideoPlayer).top, 10),
+                    direction: this.getResizeDirection(classList)
+                };
+                
+                pinnedVideoPlayer.style.transition = 'none';
+                document.body.style.userSelect = 'none';
+            }
+
+            getResizeDirection(classList) {
+                if (classList.contains('top-left')) return 'nw';
+                if (classList.contains('top')) return 'n';
+                if (classList.contains('top-right')) return 'ne';
+                if (classList.contains('left')) return 'w';
+                if (classList.contains('right')) return 'e';
+                if (classList.contains('bottom-left')) return 'sw';
+                if (classList.contains('bottom')) return 's';
+                if (classList.contains('bottom-right')) return 'se';
+                return 'se';
+            }
+
+            resize(e) {
+                if (!this.isResizing || !this.resizeData) return;
+
+                const currentX = e.clientX || (e.touches && e.touches[0].clientX);
+                const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                if (!currentX || !currentY) return;
+
+                const deltaX = currentX - this.resizeData.startX;
+                const deltaY = currentY - this.resizeData.startY;
+                
+                let newWidth = this.resizeData.startWidth;
+                let newHeight = this.resizeData.startHeight;
+                let newLeft = this.resizeData.startLeft;
+                let newTop = this.resizeData.startTop;
+
+                const minWidth = 320;
+                const minHeight = 180;
+                const maxWidth = window.innerWidth * 0.95;
+                const maxHeight = window.innerHeight * 0.95;
+
+                switch (this.resizeData.direction) {
+                    case 'e':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth + deltaX));
+                        break;
+                    case 'w':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth - deltaX));
+                        newLeft = this.resizeData.startLeft + deltaX;
+                        break;
+                    case 's':
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight + deltaY));
+                        break;
+                    case 'n':
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight - deltaY));
+                        newTop = this.resizeData.startTop + deltaY;
+                        break;
+                    case 'se':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth + deltaX));
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight + deltaY));
+                        break;
+                    case 'sw':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth - deltaX));
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight + deltaY));
+                        newLeft = this.resizeData.startLeft + deltaX;
+                        break;
+                    case 'ne':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth + deltaX));
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight - deltaY));
+                        newTop = this.resizeData.startTop + deltaY;
+                        break;
+                    case 'nw':
+                        newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeData.startWidth - deltaX));
+                        newHeight = Math.min(maxHeight, Math.max(minHeight, this.resizeData.startHeight - deltaY));
+                        newLeft = this.resizeData.startLeft + deltaX;
+                        newTop = this.resizeData.startTop + deltaY;
+                        break;
+                }
+
+                pinnedVideoPlayer.style.width = newWidth + 'px';
+                pinnedVideoPlayer.style.height = newHeight + 'px';
+                
+                if (newLeft !== this.resizeData.startLeft) {
+                    pinnedVideoPlayer.style.left = newLeft + 'px';
+                }
+                if (newTop !== this.resizeData.startTop) {
+                    pinnedVideoPlayer.style.top = newTop + 'px';
+                }
+
+                // الخروج من وضع المركز عند التكبير
+                if (this.currentMode === 'normal') {
+                    this.currentMode = 'custom';
+                    pinnedVideoPlayer.classList.remove('normal');
+                    pinnedVideoPlayer.classList.add('custom');
+                }
+            }
+
+            stopResize() {
+                this.isResizing = false;
+                this.resizeData = null;
+                pinnedVideoPlayer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                document.body.style.userSelect = '';
             }
 
             startDrag(e) {
+                if (this.isResizing) return;
+                
                 this.isDragging = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                
                 const rect = pinnedVideoPlayer.getBoundingClientRect();
-                this.dragOffset.x = e.clientX - rect.left;
-                this.dragOffset.y = e.clientY - rect.top;
+                this.dragOffset.x = clientX - rect.left;
+                this.dragOffset.y = clientY - rect.top;
+                
                 pinnedVideoPlayer.style.cursor = 'grabbing';
+                pinnedVideoPlayer.style.transition = 'none';
+                
+                // الخروج من وضع المركز عند السحب
+                if (this.currentMode === 'normal') {
+                    this.currentMode = 'custom';
+                    pinnedVideoPlayer.classList.remove('normal');
+                    pinnedVideoPlayer.classList.add('custom');
+                }
             }
 
             drag(e) {
-                if (!this.isDragging) return;
+                if (!this.isDragging || this.isResizing) return;
                 
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                if (!clientX || !clientY) return;
+
                 if (this.currentMode !== 'full') {
-                    pinnedVideoPlayer.style.left = (e.clientX - this.dragOffset.x) + 'px';
-                    pinnedVideoPlayer.style.top = (e.clientY - this.dragOffset.y) + 'px';
+                    const newX = clientX - this.dragOffset.x;
+                    const newY = clientY - this.dragOffset.y;
+                    
+                    // التأكد من بقاء النافذة ضمن الشاشة
+                    const maxX = window.innerWidth - pinnedVideoPlayer.offsetWidth;
+                    const maxY = window.innerHeight - pinnedVideoPlayer.offsetHeight;
+                    
+                    pinnedVideoPlayer.style.left = Math.max(0, Math.min(maxX, newX)) + 'px';
+                    pinnedVideoPlayer.style.top = Math.max(0, Math.min(maxY, newY)) + 'px';
                     pinnedVideoPlayer.style.transform = 'none';
                 }
             }
@@ -635,13 +993,29 @@
             stopDrag() {
                 this.isDragging = false;
                 pinnedVideoPlayer.style.cursor = 'grab';
+                pinnedVideoPlayer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            }
+
+            setMode(mode) {
+                this.currentMode = mode;
+                pinnedVideoPlayer.className = `video-player ${mode}`;
+                this.updateControlButtons();
+            }
+
+            updateControlButtons() {
+                const minimizeBtn = pinnedVideoPlayer.querySelector('.minimize');
+                const maximizeBtn = pinnedVideoPlayer.querySelector('.maximize');
+                
+                minimizeBtn.style.opacity = this.currentMode === 'mini' ? '0.5' : '1';
+                maximizeBtn.style.opacity = this.currentMode === 'full' ? '0.5' : '1';
             }
         }
 
-        // تهيئة المشغل المتطور
-        const videoPlayer = new AdvancedVideoPlayer();
+        // تهيئة الأنظمة
+        const adBlocker = new VideoAdBlocker();
+        let videoPlayer = new AdvancedVideoPlayer();
 
-        // وظيفة تحميل الرسائل الأولى - 30 رسالة فقط
+        // وظيفة تحميل الرسائل
         function loadInitialMessages() {
             messagesDiv.innerHTML = '';
             
@@ -697,7 +1071,7 @@
             editNameModal.style.display = 'none'; 
             setVideoModal.style.display = 'none'; 
             settingsModal.style.display = 'none'; 
-            adblockSettings.style.display = 'none';
+            document.getElementById('adblockSettings').style.display = 'none';
             overlay.style.display = 'none'; 
         }
         
@@ -719,8 +1093,6 @@
         saveNameBtn.onclick = () => { const newName = newNameInput.value.trim(); if (!newName) return; updateUsername(newName); closeAllModals(); };
         avatarInput.onchange = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const base64String = reader.result; myAvatarUrl = base64String; localStorage.setItem('userAvatar', base64String); myUserRef.update({ avatar: base64String }); addNotification(username, "✅ تم تغيير صورتك بنجاح.", myAvatarUrl); }; reader.readAsDataURL(file); };
         
-        closeVideoBtn.onclick = () => db.ref("pinned_video").remove();
-
         function updateMyStatus(newStatus) { myUserRef.child('status').once('value', (snapshot) => { if (snapshot.val() !== newStatus) { myUserRef.update({ status: newStatus }); } }); }
         function resetIdleTimer() { clearTimeout(idleTimer); updateMyStatus('active'); idleTimer = setTimeout(() => { updateMyStatus('idle'); }, IDLE_TIMEOUT); }
         document.addEventListener('mousemove', resetIdleTimer); document.addEventListener('keypress', resetIdleTimer); messageInput.addEventListener('input', resetIdleTimer); resetIdleTimer();
@@ -757,38 +1129,18 @@
         // بدء تحميل الرسائل
         loadInitialMessages();
 
-        // نظام الفيديو المحسن
+        // نظام الفيديو المحسن مع دعم تويتر الكامل
         db.ref("pinned_video").on("value", async (snap) => { 
             const data = snap.val(); 
-            pinnedVideoPlayer.innerHTML = `
-                <div class="video-header">
-                    <span>بث مباشر</span>
-                    <div class="video-controls">
-                        <button class="control-btn minimize" title="تصغير">🗕</button>
-                        <button class="control-btn maximize" title="تكبير">🗖</button>
-                        <button class="control-btn adblock-btn" title="AdBlock">🛡️</button>
-                        <button class="close-pinned-video">✕</button>
-                    </div>
-                </div>
-                <div class="video-body"></div>
-                <div class="resize-handle top-left"></div>
-                <div class="resize-handle top-right"></div>
-                <div class="resize-handle bottom-left"></div>
-                <div class="resize-handle bottom-right"></div>
-            `;
             
-            // إعادة تهيئة المشغل
-            const videoPlayer = new AdvancedVideoPlayer();
-            document.querySelector('.close-pinned-video').onclick = () => db.ref("pinned_video").remove();
-            document.querySelector('.adblock-btn').onclick = () => {
-                adblockSettings.style.display = 'block';
-                overlay.style.display = 'block';
-            };
-
             if (data) { 
                 pinnedVideoPlayer.style.display = 'flex'; 
                 const body = pinnedVideoPlayer.querySelector('.video-body');
+                body.innerHTML = '';
                 
+                // إعادة تهيئة المشغل
+                videoPlayer = new AdvancedVideoPlayer();
+
                 const createAndAppendVideo = (src, aspectRatio = "16 / 9") => { 
                     const video = document.createElement('video'); 
                     video.src = src; 
@@ -802,47 +1154,25 @@
                 }; 
 
                 if (data.type === 'youtube') { 
-                    body.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.id}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen style="aspect-ratio: 16 / 9;"></iframe>`; 
+                    body.innerHTML = `<iframe src="https://www.youtube.com/embed/${data.id}?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen style="aspect-ratio: 16 / 9; width: 100%; height: 100%;"></iframe>`; 
                 } else if (data.type === 'm3u' || data.type === 'direct') { 
                     createAndAppendVideo(data.url); 
                 } else if (data.type === 'twitter') { 
                     try { 
-                        const response = await fetch(`https://api.vxtwitter.com/i/status/${data.id}`); 
-                        const tweetData = await response.json(); 
-                        const mediaItems = tweetData.media_extended; 
-                        if (mediaItems && mediaItems.length > 0) { 
-                            const playMedia = (mediaItem, clickedButton) => { 
-                                body.innerHTML = ''; 
-                                const aspectRatio = mediaItem.width / mediaItem.height; 
-                                createAndAppendVideo(mediaItem.url, aspectRatio); 
-                                if (selectorContainer) { 
-                                    selectorContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active')); 
-                                    if (clickedButton) clickedButton.classList.add('active'); 
-                                } 
-                            }; 
-                            let selectorContainer; 
-                            if (mediaItems.length > 1) { 
-                                selectorContainer = document.createElement('div'); 
-                                selectorContainer.className = 'video-selector'; 
-                                mediaItems.forEach((item, index) => { 
-                                    const button = document.createElement('button'); 
-                                    button.innerText = `المقطع ${index + 1}`; 
-                                    button.onclick = () => playMedia(item, button); 
-                                    selectorContainer.appendChild(button); 
-                                }); 
-                                pinnedVideoPlayer.appendChild(selectorContainer); 
-                                body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:white;font-size:14px;aspect-ratio:16/9;">اختر مقطعاً</div>`; 
-                            } else { 
-                                playMedia(mediaItems[0], null); 
-                            } 
-                        } else { 
-                            body.innerHTML = `<p style="color:white;padding:10px;">لم يتم العثور على فيديو.</p>`; 
-                        } 
+                        // استخدام Twitter Widgets API
+                        body.innerHTML = `<blockquote class="twitter-tweet" data-lang="ar"><a href="https://twitter.com/i/status/${data.id}"></a></blockquote>`;
+                        
+                        // إعادة تحميل Twitter Widgets
+                        if (window.twttr && window.twttr.widgets) {
+                            window.twttr.widgets.load(body);
+                        }
+                        
                     } catch (error) { 
-                        console.error("Error fetching Twitter video:", error); 
-                        body.innerHTML = `<p style="color:white;padding:10px;">حدث خطأ.</p>`; 
+                        console.error("Error loading Twitter video:", error); 
+                        body.innerHTML = `<p style="color:white;padding:10px;text-align:center;">حدث خطأ في تحميل مقطع تويتر</p>`; 
                     } 
                 } 
+                
                 if (initialUsersLoaded && data) { 
                     const setterName = data.setBy; 
                     let setterAvatar = defaultAvatarUrl; 
