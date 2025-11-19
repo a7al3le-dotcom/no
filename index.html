@@ -133,13 +133,14 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
-      authDomain: "studio-4914109762-6a41f.firebaseapp.com",
-      projectId: "studio-4914109762-6a41f",
-      storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
-      messagingSenderId: "134781295069",
-      appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
-    };
+  apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
+  authDomain: "studio-4914109762-6a41f.firebaseapp.com",
+  databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
+  projectId: "studio-4914109762-6a41f",
+  storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
+  messagingSenderId: "134781295069",
+  appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
+};
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
     const loginOverlay = document.getElementById('loginOverlay'); const chatContainer = document.getElementById('chatContainer'); const errorMessage = document.getElementById('error-message');
