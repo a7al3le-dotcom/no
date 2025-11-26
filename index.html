@@ -1,839 +1,94 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دردشة - Telegram Style</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        :root {
-            --primary-color: #0088cc;
-            --secondary-color: #f0f0f0;
-            --text-color: #333333;
-            --light-text: #707579;
-            --border-color: #e6e6e6;
-            --my-message-bg: #e3f2fd;
-            --other-message-bg: #ffffff;
-            --sidebar-bg: #f8f9fa;
-            --hover-color: #f5f5f5;
-        }
-        
-        body {
-            background-color: #f5f5f5;
-            color: var(--text-color);
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .app-container {
-            display: flex;
-            height: 100vh;
-            max-width: 1200px;
-            margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Sidebar Styles */
-        .sidebar {
-            width: 30%;
-            background-color: var(--sidebar-bg);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        
-        .sidebar-header {
-            padding: 15px;
-            background-color: var(--sidebar-bg);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .search-box {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .search-box input {
-            width: 100%;
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            outline: none;
-            background-color: white;
-        }
-        
-        .chats-list {
-            flex: 1;
-            overflow-y: auto;
-        }
-        
-        .chat-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .chat-item:hover {
-            background-color: var(--hover-color);
-        }
-        
-        .chat-item.active {
-            background-color: var(--hover-color);
-        }
-        
-        .chat-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        
-        .chat-info {
-            flex: 1;
-        }
-        
-        .chat-name {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .last-message {
-            color: var(--light-text);
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chat-meta {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
-        }
-        
-        .time {
-            font-size: 0.8rem;
-            color: var(--light-text);
-        }
-        
-        .unread-count {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-        }
-        
-        /* Chat Area Styles */
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background-color: #e6ebf5;
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-        }
-        
-        .chat-header {
-            padding: 15px;
-            background-color: white;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .chat-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-        
-        .chat-status {
-            color: var(--light-text);
-            font-size: 0.9rem;
-        }
-        
-        .messages-container {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .message {
-            max-width: 70%;
-            padding: 8px 12px;
-            border-radius: 10px;
-            position: relative;
-            animation: fadeIn 0.3s ease;
-            word-wrap: break-word;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .my-message {
-            align-self: flex-end;
-            background-color: var(--my-message-bg);
-            border-bottom-right-radius: 2px;
-        }
-        
-        .other-message {
-            align-self: flex-start;
-            background-color: var(--other-message-bg);
-            border-bottom-left-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .message-sender {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 3px;
-            color: var(--primary-color);
-        }
-        
-        .message-text {
-            margin-bottom: 5px;
-            line-height: 1.4;
-        }
-        
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--light-text);
-            text-align: left;
-        }
-        
-        .message-input-area {
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 12px 15px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            outline: none;
-            resize: none;
-            height: 45px;
-            font-family: inherit;
-        }
-        
-        .send-button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .send-button:hover {
-            background-color: #0077b3;
-        }
-        
-        .action-button {
-            background: none;
-            border: none;
-            color: var(--light-text);
-            font-size: 1.2rem;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s;
-        }
-        
-        .action-button:hover {
-            background-color: var(--hover-color);
-        }
-        
-        /* Login Styles */
-        .login-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0088cc 0%, #00a8ff 100%);
-            color: white;
-            padding: 20px;
-        }
-        
-        .login-box {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            color: var(--text-color);
-        }
-        
-        .login-title {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-        }
-        
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .login-input {
-            padding: 12px 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            outline: none;
-            font-size: 1rem;
-        }
-        
-        .login-input:focus {
-            border-color: var(--primary-color);
-        }
-        
-        .login-button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 12px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .login-button:hover {
-            background-color: #0077b3;
-        }
-        
-        .user-list {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .user-list:hover {
-            background-color: var(--hover-color);
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                display: none;
-            }
-            
-            .sidebar.active {
-                display: flex;
-            }
-            
-            .chat-area {
-                display: none;
-            }
-            
-            .chat-area.active {
-                display: flex;
-            }
-            
-            .mobile-menu-button {
-                display: block;
-            }
-        }
-        
-        .mobile-menu-button {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-        
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--light-text);
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>غرفة يوتيوب</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <!-- مكتبات إضافية -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css">
+  
+  <!-- ملف CSS الخاص بنا -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- مكتبات تويتر -->
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div class="login-container" id="loginContainer">
-        <div class="login-box">
-            <h1 class="login-title">الدردشة</h1>
-            <div class="login-form">
-                <input type="text" class="login-input" id="usernameInput" placeholder="اسم المستخدم" maxlength="20">
-                <button class="login-button" id="loginBtn">الدخول إلى الدردشة</button>
-            </div>
-        </div>
+  <header>
+    <div class="header-title">
+      <strong>🎬 غرفة يوتيوب</strong>
+      <div class="room-info" id="room-info">الغرفة: default-room-1</div>
     </div>
-    
-    <!-- Main App -->
-    <div class="app-container hidden" id="appContainer">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="user-info">
-                    <div class="avatar" id="userAvatar">م</div>
-                    <div>
-                        <div id="userName">مستخدم</div>
-                        <div style="font-size: 0.8rem; color: var(--light-text);">متصل</div>
-                    </div>
+    <div class="auth-section">
+      <span class="connection-status" id="connection-status">●</span>
+      <span class="user-info" id="user-email">غير مسجّل</span>
+      <button class="auth-btn" id="login-btn">جوجل</button>
+      <button class="auth-btn" id="guest-login-btn">زائر</button>
+      <button class="auth-btn" id="logout-btn" style="display:none;">خروج</button>
+      <div class="guest-login-form" id="guest-login" style="display:none;">
+        <input class="guest-name-input" id="guest-name" type="text" placeholder="الاسم" maxlength="12" />
+        <button class="confirm-guest-btn" id="confirm-guest-btn">موافق</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- مربع واحد يحتوي على المشغل والرسائل -->
+    <section class="chat-room">
+      <!-- المشغل داخل مربع الرسائل -->
+      <div class="video-inside-chat">
+        <div id="player"></div>
+        <div class="video-controls">
+          <input class="video-url-input" id="video-id-input" type="text" placeholder="🎥 رابط يوتيوب، تويتر، M3U، أو MP4..." />
+          <button class="control-btn primary" id="set-video-btn">▶ تعيين</button>
+          <button class="control-btn" id="play-pause-btn">⏸️ إيقاف</button>
+        </div>
+      </div>
+
+      <!-- منطقة الرسائل تحت المشغل مباشرة -->
+      <div class="messages-area">
+        <div class="messages-container" id="messages">
+          <div class="message notification">
+            <img class="user-avatar" src="https://j.top4top.io/p_3599hmcgu1.png">
+            <div class="message-content">
+              <div class="message-header">
+                <div class="user-info-wrapper">
+                  <span class="username">النظام</span>
                 </div>
-                <button class="action-button" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+                <span class="message-time">الآن</span>
+              </div>
+              <div class="message-text">🔔 سجّل الدخول لبدء المحادثة</div>
             </div>
-            
-            <div class="search-box">
-                <input type="text" placeholder="بحث في المحادثات...">
-            </div>
-            
-            <div class="chats-list" id="usersList">
-                <!-- سيتم ملء قائمة المستخدمين هنا -->
-            </div>
+          </div>
         </div>
         
-        <!-- Chat Area -->
-        <div class="chat-area" id="chatArea">
-            <div class="empty-state" id="emptyState">
-                <i class="fas fa-comments"></i>
-                <h2>مرحباً في الدردشة</h2>
-                <p>اختر محادثة لبدء التحدث</p>
-            </div>
-            
-            <div class="chat-header hidden" id="chatHeader">
-                <button class="mobile-menu-button" id="menuButton">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="chat-avatar" id="chatAvatar">أ</div>
-                <div class="chat-info">
-                    <div class="chat-title" id="chatTitle">اسم المستخدم</div>
-                    <div class="chat-status" id="chatStatus">متصل الآن</div>
-                </div>
-                <div style="flex: 1;"></div>
-                <button class="action-button">
-                    <i class="fas fa-search"></i>
-                </button>
-                <button class="action-button">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-            </div>
-            
-            <div class="messages-container hidden" id="messagesContainer">
-                <!-- سيتم عرض الرسائل هنا -->
-            </div>
-            
-            <div class="message-input-area hidden" id="messageInputArea">
-                <button class="action-button">
-                    <i class="fas fa-paperclip"></i>
-                </button>
-                <textarea class="message-input" placeholder="اكتب رسالة..." id="messageInput"></textarea>
-                <button class="action-button">
-                    <i class="fas fa-smile"></i>
-                </button>
-                <button class="send-button" id="sendButton">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
+        <div class="message-input-area">
+          <input class="message-input" id="message-input" type="text" placeholder="💭 اكتب رسالتك..." disabled />
+          <button class="send-btn" id="send-btn" disabled>إرسال</button>
         </div>
-    </div>
+      </div>
+    </section>
+  </div>
 
-    <script>
-        // تهيئة Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
-            authDomain: "studio-4914109762-6a41f.firebaseapp.com",
-            databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
-            projectId: "studio-4914109762-6a41f",
-            storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
-            messagingSenderId: "134781295069",
-            appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
-        };
+  <!-- مكتبات Firebase - يجب أن تكون أولاً -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-        // تهيئة Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
+  <!-- مكتبات الفيديو -->
+  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+  <script src="https://unpkg.com/videojs-youtube/dist/Youtube.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-        // عناصر DOM
-        const loginContainer = document.getElementById('loginContainer');
-        const appContainer = document.getElementById('appContainer');
-        const usernameInput = document.getElementById('usernameInput');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userName = document.getElementById('userName');
-        const userAvatar = document.getElementById('userAvatar');
-        const usersList = document.getElementById('usersList');
-        const chatArea = document.getElementById('chatArea');
-        const emptyState = document.getElementById('emptyState');
-        const chatHeader = document.getElementById('chatHeader');
-        const messagesContainer = document.getElementById('messagesContainer');
-        const messageInputArea = document.getElementById('messageInputArea');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const chatTitle = document.getElementById('chatTitle');
-        const chatAvatar = document.getElementById('chatAvatar');
-        const chatStatus = document.getElementById('chatStatus');
-        const menuButton = document.getElementById('menuButton');
-        const sidebar = document.getElementById('sidebar');
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
-        let currentUser = null;
-        let currentChatUser = null;
-
-        // الدخول إلى الدردشة
-        loginBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-            if (username) {
-                loginUser(username);
-            } else {
-                alert('يرجى إدخال اسم المستخدم');
-            }
-        });
-
-        // السماح بالدخول بالضغط على Enter
-        usernameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                loginBtn.click();
-            }
-        });
-
-        // تسجيل الدخول
-        function loginUser(username) {
-            // تسجيل الدخول بشكل مجهول
-            auth.signInAnonymously()
-                .then((userCredential) => {
-                    currentUser = {
-                        uid: userCredential.user.uid,
-                        username: username
-                    };
-                    
-                    // حفظ بيانات المستخدم في Firebase
-                    database.ref('users/' + currentUser.uid).set({
-                        username: username,
-                        online: true,
-                        lastSeen: Date.now()
-                    });
-                    
-                    // تحديث الواجهة
-                    userName.textContent = username;
-                    userAvatar.textContent = username.charAt(0);
-                    
-                    // إظهار التطبيق وإخفاء شاشة الدخول
-                    loginContainer.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                    
-                    // تحميل المستخدمين
-                    loadUsers();
-                    
-                    // الاستماع للتحديثات في الوقت الحقيقي
-                    setupRealtimeListeners();
-                })
-                .catch((error) => {
-                    console.error('خطأ في التسجيل:', error);
-                    alert('حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.');
-                });
-        }
-
-        // تسجيل الخروج
-        logoutBtn.addEventListener('click', () => {
-            if (currentUser) {
-                // تحديث حالة المستخدم إلى غير متصل
-                database.ref('users/' + currentUser.uid).update({
-                    online: false,
-                    lastSeen: Date.now()
-                });
-                
-                // تسجيل الخروج
-                auth.signOut();
-            }
-            
-            // العودة إلى شاشة الدخول
-            appContainer.classList.add('hidden');
-            loginContainer.classList.remove('hidden');
-            usernameInput.value = '';
-            currentUser = null;
-        });
-
-        // تحميل قائمة المستخدمين
-        function loadUsers() {
-            database.ref('users').on('value', (snapshot) => {
-                usersList.innerHTML = '';
-                const users = snapshot.val();
-                
-                if (users) {
-                    Object.entries(users).forEach(([uid, userData]) => {
-                        // عدم عرض المستخدم الحالي في القائمة
-                        if (uid !== currentUser.uid) {
-                            const userItem = document.createElement('div');
-                            userItem.className = 'user-list';
-                            userItem.dataset.uid = uid;
-                            
-                            userItem.innerHTML = `
-                                <div class="chat-avatar">${userData.username.charAt(0)}</div>
-                                <div class="chat-info">
-                                    <div class="chat-name">${userData.username}</div>
-                                    <div class="last-message">${userData.online ? 'متصل الآن' : 'غير متصل'}</div>
-                                </div>
-                            `;
-                            
-                            userItem.addEventListener('click', () => {
-                                selectUser(uid, userData);
-                            });
-                            
-                            usersList.appendChild(userItem);
-                        }
-                    });
-                }
-            });
-        }
-
-        // اختيار مستخدم للدردشة
-        function selectUser(uid, userData) {
-            currentChatUser = { uid, ...userData };
-            
-            // تحديث واجهة الدردشة
-            chatTitle.textContent = userData.username;
-            chatAvatar.textContent = userData.username.charAt(0);
-            chatStatus.textContent = userData.online ? 'متصل الآن' : 'غير متصل';
-            
-            // إظهار عناصر الدردشة وإخفاء الحالة الفارغة
-            emptyState.classList.add('hidden');
-            chatHeader.classList.remove('hidden');
-            messagesContainer.classList.remove('hidden');
-            messageInputArea.classList.remove('hidden');
-            
-            // تحميل الرسائل
-            loadMessages(uid);
-            
-            // في الهاتف، إخفاء القائمة الجانبية
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('active');
-                chatArea.classList.add('active');
-            }
-        }
-
-        // تحميل الرسائل
-        function loadMessages(otherUserId) {
-            // مسح الرسائل الحالية
-            messagesContainer.innerHTML = '';
-            
-            // الحصول على معرف المحادثة
-            const chatId = getChatId(currentUser.uid, otherUserId);
-            
-            // الاستماع للرسائل الجديدة
-            database.ref('chats/' + chatId).on('value', (snapshot) => {
-                const messages = snapshot.val();
-                
-                if (messages) {
-                    // تحويل الكائن إلى مصفوفة وفرزها حسب الوقت
-                    const messagesArray = Object.entries(messages).map(([key, value]) => ({
-                        id: key,
-                        ...value
-                    }));
-                    
-                    messagesArray.sort((a, b) => a.timestamp - b.timestamp);
-                    
-                    // عرض الرسائل
-                    messagesArray.forEach(msg => {
-                        displayMessage(msg);
-                    });
-                    
-                    // التمرير لأسفل
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            });
-        }
-
-        // عرض رسالة
-        function displayMessage(message) {
-            const messageDiv = document.createElement('div');
-            const isMyMessage = message.senderId === currentUser.uid;
-            
-            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'other-message'}`;
-            
-            if (!isMyMessage) {
-                const senderDiv = document.createElement('div');
-                senderDiv.className = 'message-sender';
-                senderDiv.textContent = message.senderName;
-                messageDiv.appendChild(senderDiv);
-            }
-            
-            const textDiv = document.createElement('div');
-            textDiv.className = 'message-text';
-            textDiv.textContent = message.text;
-            
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'message-time';
-            timeDiv.textContent = formatTime(message.timestamp);
-            
-            messageDiv.appendChild(textDiv);
-            messageDiv.appendChild(timeDiv);
-            
-            messagesContainer.appendChild(messageDiv);
-        }
-
-        // إرسال رسالة
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        function sendMessage() {
-            if (!currentChatUser) return;
-            
-            const messageText = messageInput.value.trim();
-            if (messageText) {
-                const chatId = getChatId(currentUser.uid, currentChatUser.uid);
-                const message = {
-                    text: messageText,
-                    senderId: currentUser.uid,
-                    senderName: currentUser.username,
-                    timestamp: Date.now()
-                };
-                
-                // حفظ الرسالة في Firebase
-                database.ref('chats/' + chatId).push(message);
-                messageInput.value = '';
-                
-                // إعادة ضبط ارتفاع حقل الإدخال
-                messageInput.style.height = '45px';
-            }
-        }
-
-        // الحصول على معرف المحادثة الفريد
-        function getChatId(uid1, uid2) {
-            return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
-        }
-
-        // تنسيق الوقت
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
-        }
-
-        // إعداد المستمعين في الوقت الحقيقي
-        function setupRealtimeListeners() {
-            // تحديث حالة الاتصال عند إغلاق الصفحة
-            window.addEventListener('beforeunload', () => {
-                if (currentUser) {
-                    database.ref('users/' + currentUser.uid).update({
-                        online: false,
-                        lastSeen: Date.now()
-                    });
-                }
-            });
-        }
-
-        // تبديل القائمة في الهواتف
-        menuButton.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            chatArea.classList.toggle('active');
-        });
-
-        // ضبط الارتفاع التلقائي لحقل الإدخال
-        messageInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-
-        // إضافة بعض المستخدمين الافتراضيين عند التحميل لأغراض العرض
-        window.addEventListener('load', () => {
-            // هذا للعرض فقط، في التطبيق الحقيقي سيكون المستخدمون حقيقيين
-            setTimeout(() => {
-                if (!currentUser) {
-                    console.log('تطبيق الدردشة جاهز. أدخل اسم المستخدم للبدء.');
-                }
-            }, 1000);
-        });
-    </script>
+  <!-- ملفاتنا -->
+  <script src="firebase-config.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
