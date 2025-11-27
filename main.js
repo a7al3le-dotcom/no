@@ -1,4 +1,5 @@
-// main.js - كامل بدون أخطاء
+// main.js - النسخة المحسنة والآمنة
+
 // عناصر DOM
 const userEmailSpan = document.getElementById("user-email");
 const loginBtn = document.getElementById("login-btn");
@@ -10,839 +11,291 @@ const guestLoginDiv = document.getElementById("guest-login");
 const messagesDiv = document.getElementById("messages");
 const msgInput = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
-const roomInfoDiv = document.getElementById("room-info");
 const videoIdInput = document.getElementById("video-id-input");
 const setVideoBtn = document.getElementById("set-video-btn");
 const playPauseBtn = document.getElementById("play-pause-btn");
 const connectionStatus = document.getElementById("connection-status");
+const roomNameDisplay = document.getElementById("room-name-display");
 
 let currentUser = null;
 let player = null;
-let isAdmin = false;
 let isGuest = false;
 let isOnline = navigator.onLine;
 
-// التحقق من تحميل Firebase
-function checkFirebase() {
-    if (typeof firebase === 'undefined') {
-        console.error('Firebase not loaded');
-        return false;
-    }
-    if (!firebase.apps || !firebase.apps.length) {
-        console.error('Firebase app not initialized');
-        return false;
-    }
-    return true;
+// دوال مساعدة
+function getYoutubeVideoId(url) {
+    if (!url) return null;
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : (url.length === 11 ? url : null);
 }
 
-// دوال دعم تويتر
-function getYoutubeVideoId(url) { 
-    if (!url) return null; 
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/; 
-    return (url.match(regex) || [])[1] || null; 
-}
-
-function getTweetId(url) { 
-    if (!url) return null; 
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:twitter|x)\.com\/(?:\w+)\/status\/(\d+)/; 
-    return (url.match(regex) || [])[1] || null; 
-}
-
-function isDirectVideo(url) { 
-    return /\.(mp4|webm|ogv|m3u8)$/.test(url); 
-}
-
-// دالة لمعالجة روابط تويتر
-function processTwitterUrl(url) {
-    const tweetId = getTweetId(url);
-    if (tweetId) {
-        const twitterContainer = document.createElement('div');
-        twitterContainer.innerHTML = `
-            <blockquote class="twitter-tweet">
-                <a href="https://twitter.com/x/status/${tweetId}"></a>
-            </blockquote>
-        `;
-        
-        if (window.twttr) {
-            window.twttr.widgets.load(twitterContainer);
-        }
-        
-        return twitterContainer;
-    }
-    return null;
-}
-
-// استخراج ID من رابط يوتيوب
-function extractYouTubeId(input) {
-    if (!input) return null;
-    
-    // إذا كان ID مباشرة
-    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
-    
-    try {
-        // إذا كان رابط
-        const match = input.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-        return match ? match[1] : null;
-    } catch (e) {
-        return null;
-    }
+function getTweetId(url) {
+    const match = url.match(/(?:twitter|x)\.com\/(?:\w+)\/status\/(\d+)/);
+    return match ? match[1] : null;
 }
 
 // تهيئة التطبيق
 function initApp() {
-    console.log("جاري تهيئة التطبيق...");
+    console.log("Starting App in Room:", ROOM_ID);
+    roomNameDisplay.textContent = ROOM_ID;
     
-    // التحقق من Firebase أولاً
-    if (!checkFirebase()) {
-        console.error("Firebase not available - running in local mode");
-        setupLocalMode();
+    // التحقق من Firebase
+    if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        alert("خطأ: Firebase غير محمل. تأكد من الاتصال بالإنترنت.");
         return;
     }
-    
-    roomInfoDiv.textContent = "الغرفة: " + ROOM_ID;
-    
-    // إعداد نظام الدخول
-    setupAuthSystem();
-    
-    // التحقق من مستخدم محفوظ
-    checkSavedUser();
-    
-    // إعداد واجهة المستخدم
+
+    setupAuth();
     setupUI();
     
-    // تحديث حالة الاتصال
-    updateConnectionStatus();
-    
-    // إضافة رسالة ترحيب
-    addSystemMessage("🎉 مرحباً! يمكن للجميع إضافة ومشاركة الفيديوهات والروابط");
+    // التحقق من مستخدم محفوظ سابقاً
+    const savedGuest = localStorage.getItem('guestUser');
+    if (savedGuest) {
+        try { handleLogin(JSON.parse(savedGuest)); } catch(e) { localStorage.removeItem('guestUser'); }
+    }
 }
 
-// وضع التشغيل المحلي بدون Firebase
-function setupLocalMode() {
-    console.log("Running in local mode without Firebase");
-    isOnline = false;
-    updateConnectionStatus();
-    
-    roomInfoDiv.textContent = "الغرفة: " + ROOM_ID + " (محلي)";
-    
-    // إعداد نظام الدخول المحلي
-    setupAuthSystem();
-    setupUI();
-    addSystemMessage("🔧 الوضع المحلي مفعل - يمكنك استخدام جميع الميزات");
-}
-
-// إعداد نظام المصادقة
-function setupAuthSystem() {
-    // زر الدخول كزائر
-    guestLoginBtn.addEventListener('click', () => {
+// إعداد المصادقة
+function setupAuth() {
+    guestLoginBtn.onclick = () => {
         guestLoginDiv.style.display = "flex";
         guestLoginBtn.style.display = "none";
         loginBtn.style.display = "none";
-    });
+    };
 
-    // تأكيد الدخول كزائر
-    confirmGuestBtn.addEventListener('click', () => {
-        const guestName = guestNameInput.value.trim();
-        if (!guestName) {
-            alert("الرجاء إدخال اسم الزائر");
-            return;
-        }
+    confirmGuestBtn.onclick = () => {
+        const name = guestNameInput.value.trim();
+        if (name.length < 2) return alert("الاسم قصير جداً");
         
-        if (guestName.length < 2) {
-            alert("اسم الزائر يجب أن يكون على الأقل حرفين");
-            return;
-        }
-        
-        // إنشاء مستخدم زائر
-        const guestUser = {
-            uid: 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            displayName: guestName,
-            email: null,
+        const user = {
+            uid: 'guest_' + Date.now(),
+            displayName: name,
             isAnonymous: true,
-            isLocal: true,
             avatar: 'https://j.top4top.io/p_3599hmcgu1.png'
         };
         
-        // حفظ في localStorage
-        localStorage.setItem('currentGuest', JSON.stringify(guestUser));
-        handleUserLogin(guestUser);
-    });
+        localStorage.setItem('guestUser', JSON.stringify(user));
+        handleLogin(user);
+    };
 
-    // زر الدخول بجوجل
-    loginBtn.addEventListener('click', () => {
-        if (!isOnline || !checkFirebase()) {
-            alert("لا يوجد اتصال بالإنترنت. الرجاء استخدام الدخول كزائر.");
-            return;
-        }
-        
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(error => {
-                console.error("خطأ في الدخول:", error);
-                alert("حدث خطأ في الدخول بحساب جوجل. الرجاء استخدام الدخول كزائر.");
-            });
-        } catch (error) {
-            console.error("خطأ في تهيئة الدخول بجوجل:", error);
-            alert("حدث خطأ في النظام. الرجاء استخدام الدخول كزائر.");
-        }
-    });
+    loginBtn.onclick = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => alert("خطأ في الدخول: " + err.message));
+    };
 
-    // زر الخروج
-    logoutBtn.addEventListener('click', () => {
-        if (currentUser && currentUser.isLocal) {
-            localStorage.removeItem('currentGuest');
-            localStorage.removeItem('localMessages_' + ROOM_ID);
-            localStorage.removeItem('localVideo_' + ROOM_ID);
-        } else if (checkFirebase()) {
-            auth.signOut().catch(error => {
-                console.error("خطأ في الخروج:", error);
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            handleLogin({
+                uid: user.uid,
+                displayName: user.displayName,
+                email: user.email,
+                avatar: user.photoURL,
+                isAnonymous: false
             });
         }
-        handleUserLogout();
-    });
-}
-
-// إعداد واجهة المستخدم
-function setupUI() {
-    // إرسال الرسائل عند الضغط على Enter
-    msgInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
     });
 
-    // إرسال الرسائل عند الضغط على الزر
-    sendBtn.addEventListener('click', sendMessage);
-
-    // التحكم في الفيديو
-    setVideoBtn.addEventListener('click', setVideo);
-    playPauseBtn.addEventListener('click', togglePlayPause);
-}
-
-// تحديث حالة الاتصال
-function updateConnectionStatus() {
-    if (connectionStatus) {
-        if (isOnline) {
-            connectionStatus.textContent = '●';
-            connectionStatus.style.background = '#4caf50';
+    logoutBtn.onclick = () => {
+        if (currentUser.isAnonymous) {
+            localStorage.removeItem('guestUser');
+            window.location.reload();
         } else {
-            connectionStatus.textContent = '●';
-            connectionStatus.style.background = '#f44336';
+            auth.signOut().then(() => window.location.reload());
         }
-    }
+    };
 }
 
-// التحقق من مستخدم محفوظ
-function checkSavedUser() {
-    const savedGuest = localStorage.getItem('currentGuest');
-    if (savedGuest) {
-        try {
-            const guestUser = JSON.parse(savedGuest);
-            handleUserLogin(guestUser);
-        } catch (e) {
-            console.error("خطأ في تحميل المستخدم المحفوظ:", e);
-            localStorage.removeItem('currentGuest');
-        }
-    }
-}
-
-// معالجة دخول المستخدم
-function handleUserLogin(user) {
+function handleLogin(user) {
     currentUser = user;
-    isGuest = user.isAnonymous || user.isLocal;
+    userEmailSpan.textContent = user.displayName;
     
-    if (isGuest && user.isLocal) {
-        userEmailSpan.textContent = `زائر: ${user.displayName}`;
-        userEmailSpan.style.color = "#ffa726";
-        console.log("تم الدخول كزائر محلي:", user.displayName);
-    } else {
-        userEmailSpan.textContent = user.email || user.displayName;
-        userEmailSpan.style.color = "#4fc3f7";
-    }
-    
-    // تحديث واجهة المستخدم
+    // إخفاء أزرار الدخول وإظهار التحكم
     loginBtn.style.display = "none";
     guestLoginBtn.style.display = "none";
     guestLoginDiv.style.display = "none";
     logoutBtn.style.display = "inline-block";
+    
     msgInput.disabled = false;
     sendBtn.disabled = false;
     
-    // إعداد الغرفة
-    setupRoom();
-    addSystemMessage(`🎊 مرحباً ${user.displayName}! يمكنك إضافة فيديوهات ومشاركة الروابط`);
+    setupRoomConnection();
+    addSystemMessage(`مرحباً ${user.displayName}! أنت الآن في غرفة: ${ROOM_ID}`);
 }
 
-// معالجة تسجيل خروج المستخدم
-function handleUserLogout() {
-    currentUser = null;
-    isAdmin = false;
-    isGuest = false;
-    
-    userEmailSpan.textContent = "غير مسجّل";
-    userEmailSpan.style.color = "#eee";
-    loginBtn.style.display = "inline-block";
-    guestLoginBtn.style.display = "inline-block";
-    guestLoginDiv.style.display = "none";
-    logoutBtn.style.display = "none";
-    msgInput.disabled = true;
-    sendBtn.disabled = true;
-    guestNameInput.value = "";
-    
-    messagesDiv.innerHTML = "";
-    updateControlsVisibility();
-    addSystemMessage("تم تسجيل الخروج بنجاح");
-}
-
-// إعداد الغرفة
-function setupRoom() {
-    if (!isOnline || !checkFirebase()) {
-        addSystemMessage("🔧 الوضع المحلي مفعل - يمكن للجميع إضافة الفيديوهات");
-        setupLocalRoom();
-        return;
-    }
-    
-    // محاولة استخدام Firebase
-    try {
-        const roomRef = db.collection("rooms").doc(ROOM_ID);
-        roomRef.get().then(doc => {
-            if (!doc.exists) {
-                isAdmin = true;
-                roomRef.set({
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    videoId: "dQw4w9WgXcQ",
-                    isPlaying: false,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    createdBy: currentUser.uid,
-                    createdByName: currentUser.displayName,
-                    allowAllUsers: true
-                });
-                addSystemMessage("🎯 أنت أول من أنشأ الغرفة! يمكن للجميع إضافة الفيديوهات");
-            } else {
-                const data = doc.data();
-                isAdmin = data.createdBy === currentUser.uid;
-                if (isAdmin) {
-                    addSystemMessage("🎯 أنت منشئ الغرفة - يمكن للجميع إضافة الفيديوهات");
-                } else {
-                    addSystemMessage("👋 مرحباً! يمكنك إضافة فيديوهات ومشاركة الروابط");
-                }
+// الاتصال بـ Firestore
+function setupRoomConnection() {
+    // 1. الاستماع للرسائل
+    db.collection("rooms").doc(ROOM_ID).collection("messages")
+        .orderBy("createdAt", "asc")
+        .limit(50)
+        .onSnapshot(snapshot => {
+            messagesDiv.innerHTML = ""; // تنظيف لعرض الجديد
+            snapshot.forEach(doc => displayMessage(doc.data()));
+        }, error => {
+            console.error("خطأ الرسائل:", error);
+            if(error.code === 'permission-denied') {
+                addSystemMessage("⛔ خطأ: لا تملك صلاحية القراءة. تأكد من إعدادات Firestore Rules.");
             }
-            updateControlsVisibility();
-        }).catch(error => {
-            console.error("خطأ في Firestore:", error);
-            setupLocalRoom();
         });
 
-        // الاستماع للرسائل
-        listenForMessages();
-        listenForRoomChanges();
-        
-    } catch (error) {
-        console.error("خطأ في إعداد الغرفة:", error);
-        setupLocalRoom();
-    }
-}
-
-// إعداد الغرفة المحلية
-function setupLocalRoom() {
-    isAdmin = true;
-    updateControlsVisibility();
-    
-    // تحميل الرسائل المحفوظة
-    loadLocalMessages();
-}
-
-// تحميل الرسائل المحلية
-function loadLocalMessages() {
-    const savedMessages = localStorage.getItem('localMessages_' + ROOM_ID);
-    if (savedMessages) {
-        try {
-            const messages = JSON.parse(savedMessages);
-            messages.forEach(msg => {
-                displayMessage(msg);
-            });
-        } catch (e) {
-            console.error("خطأ في تحميل الرسائل المحلية:", e);
-        }
-    }
-}
-
-// إرسال رسالة - مع دعم تويتر
-function sendMessage() {
-    if (!currentUser) {
-        alert("❌ سجّل الدخول أولاً");
-        return;
-    }
-    
-    const text = msgInput.value.trim();
-    if (!text) {
-        alert("❌ الرجاء كتابة رسالة");
-        return;
-    }
-    
-    // التحقق إذا كان الرابط تويتر
-    if (text.includes('twitter.com/') || text.includes('x.com/')) {
-        const tweetId = getTweetId(text);
-        if (tweetId) {
-            // إضافة التغريدة للدردشة
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            messageDiv.innerHTML = `
-                <img class="user-avatar" src="${currentUser.avatar || 'https://j.top4top.io/p_3599hmcgu1.png'}">
-                <div class="message-content">
-                    <div class="message-header">
-                        <div class="user-info-wrapper">
-                            <span class="username">${currentUser.displayName}</span>
-                        </div>
-                        <span class="message-time">${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <div class="message-text">مشاركة تغريدة:</div>
-                </div>
-            `;
-            
-            const twitterElement = processTwitterUrl(text);
-            if (twitterElement) {
-                messageDiv.querySelector('.message-content').appendChild(twitterElement);
+    // 2. الاستماع لحالة الفيديو
+    db.collection("rooms").doc(ROOM_ID)
+        .onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (player && data.videoId) {
+                    // تشغيل الفيديو فقط إذا اختلف عن الحالي
+                    if (player.getVideoData && player.getVideoData().video_id !== data.videoId) {
+                        player.loadVideoById(data.videoId);
+                    }
+                    // مزامنة التشغيل/الإيقاف
+                    if (data.isPlaying) player.playVideo();
+                    else player.pauseVideo();
+                }
             }
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            
-            // حفظ في Firebase
-            if (isOnline && checkFirebase()) {
-                db.collection("rooms").doc(ROOM_ID)
-                    .collection("messages")
-                    .add({
-                        text: text,
-                        uid: currentUser.uid,
-                        user: currentUser.displayName,
-                        isGuest: isGuest,
-                        isTwitter: true,
-                        tweetId: tweetId,
-                        avatar: currentUser.avatar,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    })
-                    .catch(error => {
-                        console.error("خطأ في إرسال الرسالة:", error);
-                        saveMessageLocally(text, currentUser.displayName, true, tweetId);
-                    });
-            } else {
-                saveMessageLocally(text, currentUser.displayName, true, tweetId);
-            }
-        } else {
-            // رابط تويتر غير صالح
-            sendNormalMessage(text);
+        });
+}
+
+// عرض الرسالة (النسخة الآمنة)
+function displayMessage(msg) {
+    const div = document.createElement("div");
+    div.className = "message";
+    
+    // الوقت
+    const time = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : '...';
+
+    // الهيكل
+    div.innerHTML = `
+        <img class="user-avatar" src="${msg.avatar || 'https://j.top4top.io/p_3599hmcgu1.png'}">
+        <div class="message-content">
+            <div class="message-header">
+                <span class="username"></span> <!-- سيتم تعبئتها بأمان -->
+                <span class="message-time">${time}</span>
+            </div>
+            <div class="message-text"></div> <!-- سيتم تعبئتها بأمان -->
+        </div>
+    `;
+
+    // حقن النص بأمان (Anti-XSS)
+    div.querySelector('.username').textContent = msg.user;
+
+    const textDiv = div.querySelector('.message-text');
+    
+    if (msg.isTwitter && msg.tweetId) {
+        textDiv.textContent = "مشاركة تغريدة:";
+        if (window.twttr) {
+            const tContainer = document.createElement('div');
+            tContainer.innerHTML = `<blockquote class="twitter-tweet"><a href="https://twitter.com/x/status/${msg.tweetId}"></a></blockquote>`;
+            textDiv.appendChild(tContainer);
+            window.twttr.widgets.load(tContainer);
         }
     } else {
-        // رسالة عادية
-        sendNormalMessage(text);
+        textDiv.textContent = msg.text;
     }
-    
+
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text || !currentUser) return;
+
+    const tweetId = getTweetId(text);
+    const msgData = {
+        text: text,
+        user: currentUser.displayName,
+        uid: currentUser.uid,
+        avatar: currentUser.avatar,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        isTwitter: !!tweetId,
+        tweetId: tweetId
+    };
+
+    db.collection("rooms").doc(ROOM_ID).collection("messages").add(msgData);
     msgInput.value = "";
 }
 
-// إرسال رسالة عادية
-function sendNormalMessage(text) {
-    if (!isOnline || !checkFirebase()) {
-        // الحفظ محلياً
-        saveMessageLocally(text, currentUser.displayName, false);
-    } else {
-        // الإرسال عبر Firebase
-        db.collection("rooms").doc(ROOM_ID)
-            .collection("messages")
-            .add({
-                text: text,
-                uid: currentUser.uid,
-                user: currentUser.displayName,
-                isGuest: isGuest,
-                avatar: currentUser.avatar,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .catch(error => {
-                console.error("خطأ في إرسال الرسالة:", error);
-                saveMessageLocally(text, currentUser.displayName, false);
-            });
-    }
-}
+// التحكم بالفيديو
+function setVideo() {
+    const url = videoIdInput.value.trim();
+    const ytId = getYoutubeVideoId(url);
 
-// حفظ الرسالة محلياً
-function saveMessageLocally(text, userName, isTwitter = false, tweetId = null) {
-    const message = {
-        text: text,
-        uid: currentUser.uid,
-        user: userName,
-        isGuest: true,
-        isTwitter: isTwitter,
-        tweetId: tweetId,
-        avatar: currentUser.avatar,
-        createdAt: new Date().toISOString()
-    };
-    
-    // عرض الرسالة فوراً
-    displayMessage(message);
-    
-    // حفظ في localStorage
-    const savedMessages = localStorage.getItem('localMessages_' + ROOM_ID);
-    let messages = [];
-    
-    if (savedMessages) {
-        try {
-            messages = JSON.parse(savedMessages);
-        } catch (e) {
-            console.error("خطأ في تحليل الرسائل المحفوظة:", e);
+    if (ytId) {
+        // تحديث الفيديو في Firestore للجميع
+        db.collection("rooms").doc(ROOM_ID).set({
+            videoId: ytId,
+            isPlaying: true,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastUser: currentUser.displayName
+        }, { merge: true }); // merge لعدم مسح البيانات الأخرى
+        
+        addSystemMessage(`🎬 ${currentUser.displayName} شغّل فيديو يوتيوب`);
+        videoIdInput.value = "";
+    } else {
+        // إذا لم يكن يوتيوب، نرسله كرابط في الشات
+        if(url) {
+            msgInput.value = url;
+            sendMessage();
+            alert("⚠️ المشغل يدعم يوتيوب فقط حالياً. تم إرسال الرابط كرسالة.");
         }
     }
-    
-    messages.push(message);
-    localStorage.setItem('localMessages_' + ROOM_ID, JSON.stringify(messages));
 }
 
-// الاستماع للرسائل من Firebase
-function listenForMessages() {
-    if (!db || !isOnline || !checkFirebase()) return;
+// تشغيل/إيقاف
+playPauseBtn.onclick = () => {
+    if (!player) return;
+    const state = player.getPlayerState();
+    const isPlaying = (state === 1);
     
-    db.collection("rooms").doc(ROOM_ID)
-        .collection("messages")
-        .orderBy("createdAt", "asc")
-        .onSnapshot(snap => {
-            messagesDiv.innerHTML = "";
-            snap.forEach(doc => {
-                displayMessage(doc.data());
-            });
-        }, error => {
-            console.error("خطأ في الاستماع للرسائل:", error);
-        });
-}
+    db.collection("rooms").doc(ROOM_ID).set({
+        isPlaying: !isPlaying
+    }, { merge: true });
+};
 
-// عرض رسالة في الدردشة - مع دعم تويتر
-function displayMessage(m) {
-    const div = document.createElement("div");
-    
-    if (m.isTwitter && m.tweetId) {
-        // عرض تغريدة
-        div.className = "message";
-        div.innerHTML = `
-            <img class="user-avatar" src="${m.avatar || 'https://j.top4top.io/p_3599hmcgu1.png'}">
-            <div class="message-content">
-                <div class="message-header">
-                    <div class="user-info-wrapper">
-                        <span class="username">${m.user || "مجهول"}</span>
-                    </div>
-                    <span class="message-time">${m.createdAt ? (m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString('ar-EG') : new Date(m.createdAt).toLocaleTimeString('ar-EG')) : new Date().toLocaleTimeString('ar-EG')}</span>
-                </div>
-                <div class="message-text">مشاركة تغريدة:</div>
-            </div>
-        `;
-        
-        const twitterElement = processTwitterUrl(`https://twitter.com/x/status/${m.tweetId}`);
-        if (twitterElement) {
-            div.querySelector('.message-content').appendChild(twitterElement);
-        }
-    } else {
-        // رسالة عادية
-        div.className = "message";
-        
-        const time = m.createdAt ? 
-            (m.createdAt.toDate ? m.createdAt.toDate().toLocaleTimeString('ar-EG') : new Date(m.createdAt).toLocaleTimeString('ar-EG')) : 
-            new Date().toLocaleTimeString('ar-EG');
-        
-        div.innerHTML = `
-            <img class="user-avatar" src="${m.avatar || 'https://j.top4top.io/p_3599hmcgu1.png'}">
-            <div class="message-content">
-                <div class="message-header">
-                    <div class="user-info-wrapper">
-                        <span class="username">${m.user || "مجهول"}</span>
-                    </div>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-text">${m.text}</div>
-            </div>
-        `;
-    }
-    
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-// إضافة رسالة نظام
+// وظائف إضافية
 function addSystemMessage(text) {
     const div = document.createElement("div");
     div.className = "message notification";
-    div.innerHTML = `
-        <img class="user-avatar" src="https://j.top4top.io/p_3599hmcgu1.png">
-        <div class="message-content">
-            <div class="message-header">
-                <div class="user-info-wrapper">
-                    <span class="username">النظام</span>
-                </div>
-                <span class="message-time">الآن</span>
-            </div>
-            <div class="message-text">${text}</div>
-        </div>
-    `;
+    div.innerHTML = `<div class="message-content" style="text-align:center; width:100%; color:#aaa; font-size:12px;">${text}</div>`;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// التحكم في الفيديو - جميع المستخدمين يمكنهم الإضافة
-function setVideo() {
-    const input = videoIdInput.value.trim();
-    if (!input) {
-        alert("❌ الرجاء إدخال رابط يوتيوب، تويتر، M3U، أو MP4");
-        return;
-    }
+// ميزة نسخ الرابط
+window.copyRoomLink = function() {
+    const url = window.location.protocol + '//' + window.location.host + window.location.pathname + '?room=' + ROOM_ID;
+    navigator.clipboard.writeText(url).then(() => {
+        alert("تم نسخ رابط الغرفة! أرسله لأصدقائك.");
+    }).catch(() => prompt("انسخ الرابط يدوياً:", url));
+};
 
-    const videoId = extractYouTubeId(input);
-    const tweetId = getTweetId(input);
-
-    if (videoId) {
-        // فيديو يوتيوب
-        if (!isOnline || !checkFirebase()) {
-            // حفظ محلي
-            const videoData = {
-                videoId: videoId,
-                isPlaying: true,
-                updatedAt: new Date(),
-                setBy: currentUser.displayName
-            };
-            localStorage.setItem('localVideo_' + ROOM_ID, JSON.stringify(videoData));
-        } else {
-            // إرسال عبر Firebase - جميع المستخدمين يمكنهم ذلك
-            db.collection("rooms").doc(ROOM_ID).update({
-                videoId: videoId,
-                isPlaying: true,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                lastSetBy: currentUser.displayName
-            }).catch(error => {
-                console.error("خطأ في تحديث الفيديو:", error);
-            });
-        }
-
-        if (player) {
-            player.loadVideoById(videoId);
-            player.playVideo();
-        }
-        addSystemMessage(`🎬 ${currentUser.displayName} قام بتشغيل فيديو يوتيوب`);
-
-    } else if (tweetId) {
-        // فيديو تويتر
-        addSystemMessage(`🔍 ${currentUser.displayName} جاري جلب فيديو تويتر...`);
-        
-        fetch(`https://api.vxtwitter.com/i/status/${tweetId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(tweetData => {
-                if (tweetData.media_extended && tweetData.media_extended.length > 0) {
-                    const videoUrl = tweetData.media_extended[0].url;
-                    
-                    // عرض معلومات التغريدة في الدردشة
-                    const tweetMessage = `
-                        🐦 <strong>${tweetData.user_name}</strong> (@${tweetData.user_screen_name})
-                        📝 ${tweetData.text.substring(0, 100)}${tweetData.text.length > 100 ? '...' : ''}
-                    `;
-                    
-                    addSystemMessage(tweetMessage);
-                    
-                    if (videoUrl) {
-                        addSystemMessage(`🎥 ${currentUser.displayName} قام بمشاركة فيديو تويتر`);
-                    }
-                } else {
-                    addSystemMessage(`🐦 ${currentUser.displayName} قام بمشاركة تغريدة`);
-                }
-                
-                // عرض التغريدة في الدردشة
-                displayTwitterTweetInChat(tweetId);
-            })
-            .catch(error => {
-                console.error("Error fetching Twitter video:", error);
-                addSystemMessage(`❌ ${currentUser.displayName} - حدث خطأ في جلب فيديو تويتر`);
-                displayTwitterTweetInChat(tweetId);
-            });
-
-    } else if (isDirectVideo(input)) {
-        // فيديو مباشر
-        addSystemMessage(`📹 ${currentUser.displayName} قام بتشغيل فيديو مباشر`);
-        
-    } else if (input.toLowerCase().includes('.m3u')) {
-        // قائمة تشغيل M3U
-        addSystemMessage(`📋 ${currentUser.displayName} قام بتشغيل قائمة تشغيل M3U`);
-        
-    } else {
-        alert("❌ الرابط غير مدعوم. يدعم: يوتيوب، تويتر، M3U، MP4");
-    }
-}
-
-// عرض تغريدة تويتر في الدردشة
-function displayTwitterTweetInChat(tweetId) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message';
-    messageDiv.innerHTML = `
-        <img class="user-avatar" src="${currentUser.avatar || 'https://j.top4top.io/p_3599hmcgu1.png'}">
-        <div class="message-content">
-            <div class="message-header">
-                <div class="user-info-wrapper">
-                    <span class="username">${currentUser.displayName}</span>
-                </div>
-                <span class="message-time">${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <div class="message-text">مشاركة تغريدة:</div>
-        </div>
-    `;
-    
-    const twitterContainer = document.createElement('div');
-    twitterContainer.className = 'twitter-tweet-container';
-    twitterContainer.innerHTML = `
-        <blockquote class="twitter-tweet">
-            <a href="https://twitter.com/x/status/${tweetId}"></a>
-        </blockquote>
-    `;
-    
-    messageDiv.querySelector('.message-content').appendChild(twitterContainer);
-    messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    
-    // تحميل ويدجت تويتر
-    if (window.twttr) {
-        window.twttr.widgets.load(twitterContainer);
-    }
-}
-
-function togglePlayPause() {
-    if (player) {
-        if (player.getPlayerState() === 1) { // Playing
-            player.pauseVideo();
-        } else {
-            player.playVideo();
-        }
-    }
-}
-
-// تحديث واجهة التحكم - جعل الأزرار متاحة للجميع
-function updateControlsVisibility() {
-    setVideoBtn.disabled = false;
-    playPauseBtn.disabled = false;
-    
-    setVideoBtn.title = "تغيير الفيديو للجميع";
-    playPauseBtn.title = "تشغيل/إيقاف الفيديو";
-}
-
-// الاستماع لتغيّر حالة الغرفة (فيديو)
-function listenForRoomChanges() {
-    if (!db || !isOnline || !checkFirebase()) return;
-    
-    db.collection("rooms").doc(ROOM_ID)
-        .onSnapshot(doc => {
-            if (!doc.exists) return;
-            const data = doc.data();
-
-            // تحديث حقل الإدخال
-            if (data.videoId && data.videoId !== videoIdInput.value) {
-                videoIdInput.value = data.videoId;
-                
-                // إشعار عند تغيير الفيديو
-                if (data.lastSetBy && data.lastSetBy !== currentUser.displayName) {
-                    addSystemMessage(`🎬 ${data.lastSetBy} قام بتغيير الفيديو`);
-                }
-            }
-
-            if (player && data.videoId) {
-                try {
-                    const currentId = player.getVideoData().video_id;
-                    if (currentId !== data.videoId) {
-                        player.loadVideoById(data.videoId);
-                        if (data.isPlaying) {
-                            setTimeout(() => player.playVideo(), 1000);
-                        }
-                    } else {
-                        if (data.isPlaying && player.getPlayerState() !== 1) {
-                            player.playVideo();
-                        } else if (!data.isPlaying && player.getPlayerState() === 1) {
-                            player.pauseVideo();
-                        }
-                    }
-                } catch (error) {
-                    console.error("خطأ في التحكم بمشغل YouTube:", error);
-                }
-            }
-        }, error => {
-            console.error("خطأ في الاستماع لتغييرات الغرفة:", error);
-        });
-}
-
-// YouTube API
+// YouTube API Ready
 function onYouTubeIframeAPIReady() {
-    player = new YT.Player("player", {
-        height: "100%",
-        width: "100%",
-        videoId: "dQw4w9WgXcQ",
-        playerVars: {
-            playsinline: 1,
-            modestbranding: 1,
-            rel: 0
-        },
+    player = new YT.Player('player', {
+        height: '100%', width: '100%',
+        videoId: 'dQw4w9WgXcQ', // فيديو افتراضي
+        playerVars: { 'playsinline': 1, 'rel': 0 },
         events: {
-            onReady: function(event) {
-                console.log("YouTube player ready");
-                // تحميل الفيديو الحالي
-                if (isOnline && checkFirebase()) {
-                    const roomRef = db.collection("rooms").doc(ROOM_ID);
-                    roomRef.get().then(doc => {
-                        if (doc.exists) {
-                            const data = doc.data();
-                            if (data.videoId) {
-                                player.loadVideoById(data.videoId);
-                                if (data.isPlaying) {
-                                    player.playVideo();
-                                }
-                            }
+            'onReady': (event) => {
+                // عند الجاهزية، جلب الفيديو الحالي من Firestore
+                if(db) {
+                    db.collection("rooms").doc(ROOM_ID).get().then(doc => {
+                        if(doc.exists && doc.data().videoId) {
+                            event.target.loadVideoById(doc.data().videoId);
                         }
                     });
-                } else {
-                    // تحميل الفيديو المحفوظ
-                    const savedVideo = localStorage.getItem('localVideo_' + ROOM_ID);
-                    if (savedVideo) {
-                        try {
-                            const videoData = JSON.parse(savedVideo);
-                            if (videoData.videoId) {
-                                player.loadVideoById(videoData.videoId);
-                            }
-                        } catch (e) {
-                            console.error("Error loading local video:", e);
-                        }
-                    }
                 }
-            },
-            onError: function(error) {
-                console.error("YouTube player error:", error);
             }
         }
     });
 }
 
-// مراقبة حالة الاتصال
-window.addEventListener('online', () => {
-    isOnline = true;
-    updateConnectionStatus();
-    addSystemMessage("✓ تم استعادة الاتصال بالإنترنت");
-});
+// ربط الأحداث
+sendBtn.addEventListener('click', sendMessage);
+msgInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
+setVideoBtn.addEventListener('click', setVideo);
 
-window.addEventListener('offline', () => {
-    isOnline = false;
-    updateConnectionStatus();
-    addSystemMessage("⚠ الاتصال بالإنترنت مقطوع - الوضع غير متصل");
-});
-
-// إعادة تحميل ويدجت تويتر
-if (window.twttr) {
-    window.twttr.widgets.load();
-}
-
-// بدء التطبيق عند تحميل الصفحة
+// البدء
 document.addEventListener('DOMContentLoaded', initApp);
-
-// التهيئة الأولية
-updateConnectionStatus();
