@@ -5,23 +5,27 @@
   <title>غرفة يوتيوب</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   
-  <!-- مكتبات إضافية -->
+  <!-- مكتبات التصميم والأيقونات -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet" />
-  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css">
   
   <!-- ملف CSS الخاص بنا -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- مكتبات تويتر -->
+  <!-- مكتبة تويتر -->
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
   <header>
     <div class="header-title">
       <strong>🎬 غرفة يوتيوب</strong>
-      <div class="room-info" id="room-info">الغرفة: default-room-1</div>
+      <div class="room-info" id="room-info">
+        الغرفة: <span id="room-name-display">...</span>
+        <button onclick="copyRoomLink()" class="copy-link-btn" title="نسخ رابط الدعوة">
+          <i class="fa fa-link"></i> نسخ الرابط
+        </button>
+      </div>
     </div>
     <div class="auth-section">
       <span class="connection-status" id="connection-status">●</span>
@@ -37,31 +41,28 @@
   </header>
 
   <div class="main-container">
-    <!-- مربع واحد يحتوي على المشغل والرسائل -->
     <section class="chat-room">
-      <!-- المشغل داخل مربع الرسائل -->
+      <!-- المشغل -->
       <div class="video-inside-chat">
         <div id="player"></div>
         <div class="video-controls">
-          <input class="video-url-input" id="video-id-input" type="text" placeholder="🎥 رابط يوتيوب، تويتر، M3U، أو MP4..." />
+          <input class="video-url-input" id="video-id-input" type="text" placeholder="🎥 رابط فيديو يوتيوب..." />
           <button class="control-btn primary" id="set-video-btn">▶ تعيين</button>
-          <button class="control-btn" id="play-pause-btn">⏸️ إيقاف</button>
+          <button class="control-btn" id="play-pause-btn">⏯️ تشغيل/إيقاف</button>
         </div>
       </div>
 
-      <!-- منطقة الرسائل تحت المشغل مباشرة -->
+      <!-- الرسائل -->
       <div class="messages-area">
         <div class="messages-container" id="messages">
           <div class="message notification">
             <img class="user-avatar" src="https://j.top4top.io/p_3599hmcgu1.png">
             <div class="message-content">
               <div class="message-header">
-                <div class="user-info-wrapper">
-                  <span class="username">النظام</span>
-                </div>
+                <span class="username">النظام</span>
                 <span class="message-time">الآن</span>
               </div>
-              <div class="message-text">🔔 سجّل الدخول لبدء المحادثة</div>
+              <div class="message-text">🔔 جاري الاتصال بالغرفة...</div>
             </div>
           </div>
         </div>
@@ -74,17 +75,12 @@
     </section>
   </div>
 
-  <!-- مكتبات Firebase - يجب أن تكون أولاً -->
+  <!-- Firebase Libraries -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-  <!-- مكتبات الفيديو -->
-  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-  <script src="https://unpkg.com/videojs-youtube/dist/Youtube.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-  <!-- YouTube IFrame API -->
+  <!-- YouTube API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
   <!-- ملفاتنا -->
