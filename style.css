@@ -1,115 +1,225 @@
-/* style.css */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* style.css - النسخة المحسنة للجوال */
+
+/* 1. إعدادات عامة */
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-tap-highlight-color: transparent; /* إزالة لون النقر الأزرق في الجوال */
+}
 
 body { 
     font-family: 'Tajawal', sans-serif; 
     background: #0f0f0f; 
     color: #eee; 
-    min-height: 100vh;
+    /* استخدام dvh يحل مشكلة شريط العنوان في الجوال */
+    min-height: 100dvh; 
     font-size: 15px;
     font-weight: 700;
+    overflow: hidden; /* منع التمرير للصفحة بالكامل، التمرير فقط للرسائل */
 }
 
+/* 2. الهيدر (الشريط العلوي) */
 header { 
-    padding: 8px 15px; 
+    padding: 8px 10px; 
     background: #1a1a1a; 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
     border-bottom: 1px solid #333;
-    position: sticky; top: 0; z-index: 100;
-    flex-wrap: wrap; gap: 8px;
+    height: 50px; /* ارتفاع ثابت */
+    flex-wrap: nowrap; /* منع العناصر من النزول لسطر جديد بشكل عشوائي */
 }
 
+.header-title {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+}
+
+.header-title strong {
+    white-space: nowrap;
+}
+
+/* 3. الحاوية الرئيسية */
 .main-container {
-    max-width: 1200px; margin: 0 auto; padding: 10px;
-    height: calc(100vh - 60px);
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 0; /* إزالة الهوامش للاستفادة من كامل شاشة الجوال */
+    height: calc(100dvh - 50px); /* الارتفاع الكلي ناقص ارتفاع الهيدر */
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-room {
-    background: #1a1a1a; border-radius: 8px; overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    height: 100%; display: flex; flex-direction: column;
+    background: #1a1a1a; 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column;
+    border-radius: 0; /* إزالة الحواف الدائرية للجوال */
 }
 
-.video-inside-chat { background: #000; flex-shrink: 0; }
+/* 4. المشغل */
+.video-inside-chat { 
+    background: #000; 
+    flex-shrink: 0; /* منع المشغل من الانكماش */
+    width: 100%;
+}
 
-#player { width: 100%; height: auto; aspect-ratio: 16/9; min-height: 200px; }
+#player { 
+    width: 100%; 
+    aspect-ratio: 16/9; /* يحافظ على أبعاد الفيديو في كل الشاشات */
+    /* في الجوال، لا نريد أن يأخذ الفيديو مساحة كبيرة جداً إذا كانت الشاشة بالطول */
+    max-height: 35vh; 
+}
 
+/* تحكمات الفيديو */
 .video-controls {
-    padding: 8px; background: #1a1a1a; border-top: 1px solid #333;
-    display: flex; gap: 6px; align-items: center;
+    padding: 8px; 
+    background: #1a1a1a; 
+    border-top: 1px solid #333;
+    display: flex; 
+    gap: 6px; 
+    align-items: center;
 }
 
 .video-url-input {
-    flex: 1; padding: 8px; background: #222; border: 1px solid #444;
-    color: #eee; border-radius: 4px; font-size: 13px;
+    flex: 1; 
+    padding: 0 10px; 
+    height: 40px; /* ارتفاع مريح للمس */
+    background: #222; 
+    border: 1px solid #444;
+    color: #eee; 
+    border-radius: 4px; 
+    font-size: 16px; /* 16px يمنع الزوم التلقائي في آيفون */
 }
 
 .control-btn {
-    padding: 8px 12px; background: #333; color: #eee; border: 1px solid #555;
-    border-radius: 4px; cursor: pointer; white-space: nowrap;
+    height: 40px; /* زر كبير للمس */
+    padding: 0 15px; 
+    background: #333; 
+    color: #eee; 
+    border: 1px solid #555;
+    border-radius: 4px; 
+    cursor: pointer; 
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.control-btn.primary { background: #4fc3f7; color: #000; }
-.control-btn:hover { opacity: 0.9; }
+.control-btn.primary { background: #4fc3f7; color: #000; font-weight: bold; }
 
-/* منطقة الرسائل */
-.messages-area { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+/* 5. منطقة الرسائل */
+.messages-area { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    min-height: 0; /* ضروري لعمل التمرير بشكل صحيح */
+    position: relative;
+}
 
 .messages-container {
-    flex: 1; overflow-y: auto; padding: 12px; background: #0a0a0a;
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 10px; 
+    background: #0a0a0a;
+    -webkit-overflow-scrolling: touch; /* تمرير ناعم في آيفون */
 }
 
 .message {
-    margin-bottom: 8px; padding: 8px; border-radius: 6px;
-    background: rgba(255,255,255,0.05); border-left: 2px solid #333;
-    display: flex; width: 100%; gap: 10px;
+    margin-bottom: 8px; 
+    padding: 8px 10px; 
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05); 
+    border-right: 3px solid #333; /* تغيير الحدود لليمين للعربية */
+    border-left: none;
+    display: flex; 
+    width: 100%; 
+    gap: 10px;
+    align-items: flex-start;
 }
 
-.user-avatar { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+.user-avatar { 
+    width: 35px; 
+    height: 35px; 
+    border-radius: 50%; /* صورة دائرية أجمل للجوال */
+    object-fit: cover; 
+    flex-shrink: 0;
+}
 
 .message-content { flex: 1; overflow: hidden; }
 
-.message-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-
-.username { color: #4fc3f7; font-weight: bold; font-size: 14px; }
-.message-time { color: #888; font-size: 11px; }
+.username { color: #4fc3f7; font-weight: bold; font-size: 13px; margin-bottom: 2px; display: block;}
+.message-time { color: #666; font-size: 10px; float: left;}
 
 .message-text { 
-    color: #ddd; word-wrap: break-word; line-height: 1.4;
-    text-align: right; direction: rtl;
+    color: #ddd; 
+    word-wrap: break-word; 
+    line-height: 1.5;
+    text-align: right; 
+    direction: rtl;
+    font-size: 14px;
 }
 
+/* 6. منطقة الإدخال السفلية */
 .message-input-area {
-    display: flex; padding: 10px; gap: 8px; background: #222; border-top: 1px solid #333;
+    display: flex; 
+    padding: 8px; 
+    gap: 8px; 
+    background: #222; 
+    border-top: 1px solid #333;
+    /* لجعلها تلتصق فوق الكيبورد */
+    position: sticky; 
+    bottom: 0;
+    z-index: 10;
 }
 
 .message-input {
-    flex: 1; padding: 10px; background: #333; border: 1px solid #555;
-    color: #eee; border-radius: 4px;
+    flex: 1; 
+    height: 44px; /* ارتفاع قياسي للموبايل */
+    padding: 0 12px; 
+    background: #333; 
+    border: 1px solid #555;
+    color: #eee; 
+    border-radius: 22px; /* حواف دائرية كاملة مثل واتساب */
+    font-size: 16px; /* يمنع الزوم */
 }
+
+.message-input:focus { outline: none; border-color: #4fc3f7; }
 
 .send-btn {
-    padding: 0 20px; background: #4fc3f7; color: #000; border: none;
-    border-radius: 4px; font-weight: bold;
+    height: 44px;
+    width: 44px;
+    border-radius: 50%;
+    background: #4fc3f7; 
+    color: #000; 
+    border: none;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px; /* للأيقونة أو السهم */
+    padding: 0;
 }
 
-/* Auth & Header Elements */
-.auth-section { display: flex; align-items: center; gap: 6px; }
-.connection-status { color: #4caf50; font-size: 18px; }
-.user-info { font-size: 12px; color: #aaa; }
-
-.copy-link-btn {
-    background: transparent; border: 1px solid #444; color: #aaa;
-    padding: 2px 6px; font-size: 11px; cursor: pointer; border-radius: 3px;
-    margin-right: 5px;
+/* 7. تحسينات خاصة بالشاشات الصغيرة جداً */
+@media (max-width: 480px) {
+    .auth-btn { padding: 4px 8px; font-size: 11px; }
+    .connection-status { font-size: 12px; }
+    .user-info { display: none; } /* إخفاء الإيميل في الشاشات الصغيرة لتوفير مساحة */
+    
+    /* جعل أزرار الفيديو أصغر قليلاً لتسع الشاشة */
+    .control-btn { padding: 0 10px; font-size: 12px; }
+    
+    .room-info { font-size: 10px; }
+    .copy-link-btn { padding: 2px 4px; }
 }
-.copy-link-btn:hover { background: #333; color: #fff; }
 
-.guest-login-form { display: flex; gap: 5px; }
-.guest-name-input { width: 100px; background: #222; border: 1px solid #444; color: #fff; padding: 4px; }
-.confirm-guest-btn { background: #ffa726; border: none; padding: 4px 8px; border-radius: 3px; }
+/* تويتر */
+.twitter-tweet { margin: 5px 0 !important; border-radius: 8px; overflow: hidden; max-width: 100% !important; }
 
-/* Twitter Adjustments */
-.twitter-tweet { margin: 5px 0 !important; border-radius: 8px; overflow: hidden; }
+/* نوافذ تسجيل الدخول */
+.auth-section { display: flex; align-items: center; gap: 5px; }
+.guest-login-form { position: absolute; top: 50px; left: 0; right: 0; background: #222; padding: 10px; border-bottom: 1px solid #444; justify-content: center; z-index: 99; display: flex; gap: 5px;}
+.guest-name-input { padding: 8px; border-radius: 4px; border: 1px solid #555; background: #333; color: white; }
