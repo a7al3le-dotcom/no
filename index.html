@@ -2,9 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>شات نوف</title>
+  <title>شات نوف - مشغل احترافي</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -12,19 +13,76 @@
   <script src="https://unpkg.com/videojs-youtube/dist/Youtube.min.js"></script>
 
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-    body { font-family: 'Tajawal', sans-serif; background: #f4f7f9; display: flex; flex-direction: column; position: relative; }
-    #chat-container { display: flex; flex-direction: column; height: 100%; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      padding: 0; 
+      overflow: hidden; 
+      background: #0a0a0a;
+    }
     
-    #messages { flex: 1; overflow-y: auto; padding: 15px; background: #fff; scroll-behavior: smooth; }
+    body { 
+      font-family: 'Tajawal', sans-serif; 
+      background: #0a0a0a;
+      color: #ffffff;
+      display: flex; 
+      flex-direction: column; 
+      position: relative; 
+    }
     
-    .msg { margin: 8px 0; display: flex; gap: 10px; align-items: center; direction: ltr; text-align: left; font-size: 15px; line-height: 1.4; }
-    .sys { text-align: center; color: #888; font-size: 12px; margin: 10px auto; font-style: italic; background-color: #f0f0f0; padding: 4px 10px; border-radius: 12px; transition: opacity 0.5s; }
+    #chat-container { 
+      display: flex; 
+      flex-direction: column; 
+      height: 100%; 
+    }
     
-    /* لون المستخدم موحد للجميع */
-    .user { font-weight: bold; color: #005c97; }
+    #messages { 
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 15px; 
+      background: #1a1a1a;
+      scroll-behavior: smooth; 
+    }
     
-    .time { font-size: 11px; color: #999; min-width: 40px; }
+    .msg { 
+      margin: 8px 0; 
+      display: flex; 
+      gap: 10px; 
+      align-items: center; 
+      direction: ltr; 
+      text-align: left; 
+      font-size: 15px; 
+      line-height: 1.4; 
+    }
+    
+    .sys { 
+      text-align: center; 
+      color: #aaa;
+      font-size: 12px; 
+      margin: 10px auto; 
+      font-style: italic; 
+      background-color: #2a2a2a;
+      padding: 4px 10px; 
+      border-radius: 12px; 
+      transition: opacity 0.5s; 
+    }
+    
+    .user { 
+      font-weight: bold; 
+      color: #4dabf7;
+    }
+    
+    .time { 
+      font-size: 11px; 
+      color: #888; 
+      min-width: 40px; 
+    }
     
     #inputArea {
       display: flex;
@@ -32,31 +90,39 @@
       align-items: center;
       gap: 8px;
       padding: 10px;
-      background: #ffffff;
-      border-top: none;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
     }
 
-    /* --- توحيد المقاسات هنا --- */
     #messageInput { 
       flex: 1; 
       font-size: 16px; 
-      height: 45px; /* ارتفاع ثابت */
-      padding: 0 15px; /* هوامش جانبية فقط */
-      border: 1px solid #eee;
+      height: 45px;
+      padding: 0 15px;
+      border: 1px solid #444;
       border-radius: 25px; 
       font-family: 'Tajawal', sans-serif; 
-      background: #ffffff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.03); 
-      box-sizing: border-box; /* لضمان احتساب الإطار ضمن الارتفاع */
+      background: #2a2a2a;
+      color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+      box-sizing: border-box;
     }
-    #messageInput:focus { border-color: #3366cc; outline: none; }
+    
+    #messageInput:focus { 
+      border-color: #4dabf7;
+      outline: none; 
+    }
+    
+    #messageInput::placeholder {
+      color: #888;
+    }
     
     #sendBtn { 
-      height: 45px; /* نفس ارتفاع الحقل */
+      height: 45px;
       padding: 0 25px; 
       border: none; 
       border-radius: 25px; 
-      background: #3366cc; 
+      background: #4dabf7;
       color: white; 
       cursor: pointer; 
       font-family: 'Tajawal', sans-serif;
@@ -66,54 +132,600 @@
       justify-content: center;
       box-sizing: border-box;
     }
-    /* -------------------------- */
 
-    #sendBtn:hover { background: #254e99; }
+    #sendBtn:hover { 
+      background: #3b99e6;
+    }
     
-    #topButtons { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 1000; }
-    .btn { padding: 6px 10px; background: white; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; }
-    .btn .count-text { font-size: 14px; margin-right: 4px; }
+    #topButtons { 
+      position: fixed; 
+      top: 10px; 
+      right: 10px; 
+      display: flex; 
+      gap: 8px; 
+      z-index: 1000; 
+    }
     
-    #onlineList { position: fixed; top: 10px; right: 10px; border: 1px solid #ccc; background: white; padding: 8px 14px; border-radius: 20px; font-size: 14px; cursor: pointer; z-index: 1000; display: flex; align-items: center; gap: 5px; }
-    #usersBox, #setVideoModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1003; display: none; }
-    #usersList { max-height: 200px; overflow-y: auto; }
-    .user-item { display: flex; align-items: center; gap: 8px; padding: 5px 2px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-    .status-indicator { width: 10px; height: 10px; border-radius: 50%; }
-    .status-green { background-color: #28a745; } .status-yellow { background-color: #ffc107; } .status-gray { background-color: #ccc; }
+    .btn { 
+      padding: 6px 10px; 
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 20px; 
+      cursor: pointer; 
+      font-size: 16px; 
+      line-height: 1; 
+      display: flex; 
+      align-items: center; 
+      color: #ffffff;
+    }
     
-    .delete-btn { background: none; border: none; color: #d00; font-size: 12px; cursor: pointer; margin-left: auto; opacity: 0.6; }
-    .delete-btn:hover { opacity: 1; background-color: #ffe5e5; border-radius: 4px; }
+    .btn .count-text { 
+      font-size: 14px; 
+      margin-right: 4px; 
+    }
+    
+    #onlineList { 
+      position: fixed; 
+      top: 10px; 
+      right: 10px; 
+      border: 1px solid #444;
+      background: #2a2a2a;
+      padding: 8px 14px; 
+      border-radius: 20px; 
+      font-size: 14px; 
+      cursor: pointer; 
+      z-index: 1000; 
+      display: flex; 
+      align-items: center; 
+      gap: 5px; 
+      color: #ffffff;
+    }
+    
+    #usersBox, #setVideoModal { 
+      position: fixed; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%); 
+      background: #2a2a2a;
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5); 
+      z-index: 1003; 
+      display: none; 
+      color: #ffffff;
+      border: 1px solid #444;
+    }
+    
+    #usersList { 
+      max-height: 200px; 
+      overflow-y: auto; 
+    }
+    
+    .user-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      padding: 5px 2px; 
+      border-bottom: 1px solid #444;
+      font-size: 14px; 
+    }
+    
+    .status-indicator { 
+      width: 10px; 
+      height: 10px; 
+      border-radius: 50%; 
+    }
+    
+    .status-green { background-color: #51cf66; } 
+    .status-yellow { background-color: #fcc419; } 
+    .status-gray { background-color: #868e96; }
+    
+    .delete-btn { 
+      background: none; 
+      border: none; 
+      color: #ff6b6b;
+      font-size: 12px; 
+      cursor: pointer; 
+      margin-left: auto; 
+      opacity: 0.6; 
+    }
+    
+    .delete-btn:hover { 
+      opacity: 1; 
+      background-color: rgba(255, 107, 107, 0.1);
+      border-radius: 4px; 
+    }
 
-    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-    #loginBox { background: white; padding: 30px; border-radius: 15px; text-align: center; min-width: 300px; }
-    #usernameInput { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; font-family: 'Tajawal', sans-serif;}
-    #loginBtn { background: #3366cc; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; font-family: 'Tajawal', sans-serif; margin-top: 10px; }
+    #loginScreen { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0, 0, 0, 0.95);
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 10000; 
+    }
     
-    #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; display: none; }
+    #loginBox { 
+      background: #2a2a2a;
+      padding: 30px; 
+      border-radius: 15px; 
+      text-align: center; 
+      min-width: 300px; 
+      color: #ffffff;
+      border: 1px solid #444;
+    }
     
-    /* مشغل الفيديو المثبت */
-    #pinnedVideoPlayer { position: fixed; top: 50px; left: 50px; width: clamp(300px, 90vw, 480px); background: #000; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); z-index: 998; display: none; flex-direction: column; overflow: hidden; }
-    .video-header { background-color: #333; color: white; padding: 5px 10px; border-top-left-radius: 7px; border-top-right-radius: 7px; cursor: move; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; touch-action: none; font-size: 14px; }
-    .video-body { width: 100%; background: #000; flex-grow: 1; }
-    .video-js .vjs-tech { object-fit: contain; }
-    .close-pinned-video { background: #d9534f; border: 1px solid #d43f3a; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 20px; text-align: center; }
-    .resize-handle { position: absolute; width: 20px; height: 20px; bottom: 0; right: 0; cursor: nwse-resize; z-index: 10; }
+    #usernameInput { 
+      width: 100%; 
+      padding: 12px; 
+      margin: 10px 0; 
+      border: 2px solid #444;
+      border-radius: 8px; 
+      font-size: 16px; 
+      text-align: center; 
+      box-sizing: border-box; 
+      font-family: 'Tajawal', sans-serif;
+      background: #1a1a1a;
+      color: #ffffff;
+    }
     
-    /* Netflix Theme for Video.js */
-    .video-js.vjs-netflix-theme { background-color: #000; }
-    .vjs-netflix-theme .vjs-control-bar { height: 6em; background: none; background-image: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
-    .vjs-netflix-theme .vjs-big-play-button { display: none !important; }
-    .vjs-netflix-theme .vjs-progress-control { position: absolute; left: 0; right: 0; width: 100%; top: -3em; height: 2.5em; }
-    .vjs-netflix-theme .vjs-progress-holder { height: 0.3em; margin: 1.1em 0; }
-    .vjs-netflix-theme .vjs-play-progress, .vjs-netflix-theme .vjs-load-progress { height: 100%; }
-    .vjs-netflix-theme .vjs-play-progress:before { display: none; }
-    .vjs-netflix-theme .vjs-play-progress { background-color: #e50914; }
-    .vjs-netflix-theme .vjs-load-progress { background: rgba(255, 255, 255, 0.4); }
-    .vjs-netflix-theme .vjs-time-control { line-height: 5em; padding: 0 1em; }
-    .vjs-netflix-theme .vjs-remaining-time { line-height: 5em; }
-    .vjs-netflix-theme .vjs-button > .vjs-icon-placeholder:before { font-size: 2.2em; line-height: 2.2; }
-    .vjs-netflix-theme .vjs-volume-panel, .vjs-netflix-theme .vjs-fullscreen-control { margin-right: 1em; }
-    .video-js.vjs-netflix-theme.vjs-has-started.vjs-user-inactive .vjs-control-bar { opacity: 0; visibility: hidden; }
+    #usernameInput::placeholder {
+      color: #888;
+    }
+    
+    #loginBtn { 
+      background: #4dabf7;
+      color: white; 
+      border: none; 
+      padding: 12px 30px; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      cursor: pointer; 
+      font-family: 'Tajawal', sans-serif; 
+      margin-top: 10px; 
+    }
+    
+    #loginBtn:hover {
+      background: #3b99e6;
+    }
+    
+    #overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.8);
+      z-index: 1001; 
+      display: none; 
+    }
+    
+    /* مشغل الفيديو الاحترافي */
+    #pinnedVideoPlayer { 
+      position: fixed; 
+      top: 50px; 
+      left: 50px; 
+      width: clamp(320px, 90vw, 800px); 
+      background: #000; 
+      border: 1px solid #333;
+      border-radius: 12px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+      z-index: 998; 
+      display: none; 
+      flex-direction: column; 
+      overflow: hidden; 
+      font-family: 'Tajawal', sans-serif;
+    }
+    
+    .video-header { 
+      background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+      color: #ffffff;
+      padding: 12px 16px; 
+      border-top-left-radius: 11px; 
+      border-top-right-radius: 11px; 
+      cursor: move; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-shrink: 0; 
+      touch-action: none; 
+      font-size: 14px; 
+      border-bottom: 1px solid #333;
+    }
+    
+    .video-body { 
+      width: 100%; 
+      background: #000; 
+      flex-grow: 1; 
+      position: relative;
+      min-height: 200px;
+    }
+    
+    .video-js {
+      width: 100%;
+      height: 100%;
+      border-radius: 0 0 11px 11px;
+    }
+    
+    .close-pinned-video { 
+      background: #ff4757;
+      border: none; 
+      color: white; 
+      border-radius: 50%; 
+      width: 28px; 
+      height: 28px; 
+      cursor: pointer; 
+      font-size: 14px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    
+    .close-pinned-video:hover {
+      background: #ff3742;
+      transform: scale(1.1);
+    }
+    
+    .resize-handle { 
+      position: absolute; 
+      width: 20px; 
+      height: 20px; 
+      bottom: 0; 
+      right: 0; 
+      cursor: nwse-resize; 
+      z-index: 100; 
+      background: linear-gradient(135deg, transparent 50%, #4dabf7 50%);
+      border-bottom-right-radius: 11px;
+    }
+    
+    /* تحكمات الفيديو المخصصة */
+    .yassin-player-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .video-body:hover .yassin-player-controls {
+      opacity: 1;
+    }
+    
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #4dabf7, #2ecc71);
+      border-radius: 3px;
+      width: 0%;
+      position: relative;
+      transition: width 0.1s linear;
+    }
+    
+    .progress-handle {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    
+    .progress-container:hover .progress-handle {
+      opacity: 1;
+    }
+    
+    .time-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #ffffff;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    
+    .controls-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .controls-left, .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .control-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+    }
+    
+    .control-btn:hover {
+      background: rgba(255,255,255,0.1);
+      transform: scale(1.1);
+    }
+    
+    .control-btn.active {
+      background: rgba(77, 171, 247, 0.2);
+      color: #4dabf7;
+    }
+    
+    .play-pause-btn {
+      background: #4dabf7;
+      color: white;
+      width: 45px;
+      height: 45px;
+      font-size: 20px;
+    }
+    
+    .play-pause-btn:hover {
+      background: #3b99e6;
+      transform: scale(1.05);
+    }
+    
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .volume-slider {
+      width: 80px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .volume-level {
+      height: 100%;
+      background: #4dabf7;
+      border-radius: 2px;
+      width: 100%;
+    }
+    
+    .volume-handle {
+      position: absolute;
+      right: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .volume-slider:hover .volume-handle {
+      opacity: 1;
+    }
+    
+    .speed-control {
+      position: relative;
+    }
+    
+    .speed-menu {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: rgba(26, 26, 26, 0.95);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 0;
+      min-width: 100px;
+      display: none;
+      backdrop-filter: blur(10px);
+    }
+    
+    .speed-menu.show {
+      display: block;
+    }
+    
+    .speed-option {
+      padding: 8px 16px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-size: 14px;
+    }
+    
+    .speed-option:hover {
+      background: rgba(77, 171, 247, 0.2);
+    }
+    
+    .speed-option.active {
+      color: #4dabf7;
+      background: rgba(77, 171, 247, 0.1);
+    }
+    
+    .quality-control {
+      position: relative;
+    }
+    
+    .quality-menu {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: rgba(26, 26, 26, 0.95);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 0;
+      min-width: 120px;
+      display: none;
+      backdrop-filter: blur(10px);
+    }
+    
+    .quality-menu.show {
+      display: block;
+    }
+    
+    .quality-option {
+      padding: 8px 16px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-size: 14px;
+    }
+    
+    .quality-option:hover {
+      background: rgba(77, 171, 247, 0.2);
+    }
+    
+    .quality-option.active {
+      color: #4dabf7;
+      background: rgba(77, 171, 247, 0.1);
+    }
+    
+    /* ازرار التقديم والتأخير */
+    .skip-controls {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    
+    .skip-btn {
+      pointer-events: auto;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: white;
+      font-size: 20px;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    
+    .video-body:hover .skip-btn {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    .skip-btn:hover {
+      background: rgba(77, 171, 247, 0.8);
+      border-color: #4dabf7;
+      transform: scale(1.1);
+    }
+    
+    .skip-tooltip {
+      position: absolute;
+      bottom: -35px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .skip-btn:hover .skip-tooltip {
+      opacity: 1;
+    }
+    
+    /* مؤشر التقديم */
+    .skip-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .skip-indicator.show {
+      opacity: 1;
+    }
+    
+    /* تحسينات للوضع الليلي */
+    #messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #messages::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    
+    #messages::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    
+    #messages::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Netflix Theme for Video.js - معدل */
+    .video-js.vjs-netflix-theme { 
+      background-color: #000; 
+    }
+    
+    .vjs-netflix-theme .vjs-control-bar { 
+      display: none !important; 
+    }
   </style>
 </head>
 <body>
@@ -173,6 +785,7 @@
     let userRef, messagesRef, onlineRef, pinnedVideoRef;
     let serverTimeOffset = 0;
     let videoPlayerInstance = null;
+    let customControls = null;
 
     const loginScreen = document.getElementById('loginScreen');
     const usernameInput = document.getElementById('usernameInput');
@@ -301,16 +914,20 @@
           videoPlayerInstance.dispose();
           videoPlayerInstance = null;
         }
+        if (customControls) {
+          customControls.remove();
+          customControls = null;
+        }
         pinnedVideoPlayer.innerHTML = '';
 
         if (data) {
           pinnedVideoPlayer.style.display = 'flex';
           const header = document.createElement('div');
           header.className = 'video-header';
-          header.innerHTML = `<span>بث مباشر - ${data.setBy}</span>`;
+          header.innerHTML = `<span>🎬 بث مباشر - ${data.setBy}</span>`;
           const closeBtn = document.createElement('button');
           closeBtn.className = 'close-pinned-video';
-          closeBtn.innerHTML = '✖';
+          closeBtn.innerHTML = '<i class="fas fa-times"></i>';
           closeBtn.onclick = () => pinnedVideoRef.remove();
           header.appendChild(closeBtn);
           const body = document.createElement('div');
@@ -362,7 +979,7 @@
             let playerOptions = {
               autoplay: true,
               muted: true,
-              controls: true,
+              controls: false,
               aspectRatio: '16:9',
               playsinline: true,
               techOrder: data.type === 'youtube' ? ['youtube'] : ['html5'],
@@ -370,6 +987,11 @@
             };
             
             videoPlayerInstance = videojs(videoEl, playerOptions);
+            
+            // إضافة التحكمات المخصصة بعد تهيئة المشغل
+            videoPlayerInstance.ready(() => {
+              createCustomControls(body, videoPlayerInstance);
+            });
           }
 
           // إضافة إشعار عن تشغيل الفيديو
@@ -380,6 +1002,334 @@
       });
     }
 
+    // دالة لإنشاء التحكمات المخصصة
+    function createCustomControls(container, player) {
+      customControls = document.createElement('div');
+      customControls.className = 'yassin-player-controls';
+      
+      // شريط التقدم
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'progress-container';
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      const progressHandle = document.createElement('div');
+      progressHandle.className = 'progress-handle';
+      progressBar.appendChild(progressHandle);
+      progressContainer.appendChild(progressBar);
+      
+      // عرض الوقت
+      const timeDisplay = document.createElement('div');
+      timeDisplay.className = 'time-display';
+      timeDisplay.innerHTML = '<span class="current-time">0:00</span> / <span class="duration">0:00</span>';
+      
+      // التحكمات الرئيسية
+      const controlsMain = document.createElement('div');
+      controlsMain.className = 'controls-main';
+      
+      const controlsLeft = document.createElement('div');
+      controlsLeft.className = 'controls-left';
+      
+      const controlsRight = document.createElement('div');
+      controlsRight.className = 'controls-right';
+      
+      // ازرار التحكم اليسرى
+      const playPauseBtn = createControlButton('play-pause-btn', 'fas fa-play', 'تشغيل/إيقاف');
+      const rewindBtn = createControlButton('control-btn', 'fas fa-backward', 'رجوع 10 ثواني');
+      const forwardBtn = createControlButton('control-btn', 'fas fa-forward', 'تقديم 10 ثواني');
+      const volumeBtn = createControlButton('control-btn', 'fas fa-volume-up', 'تحكم في الصوت');
+      
+      // ازرار التحكم اليمنى
+      const speedBtn = createControlButton('control-btn', 'fas fa-tachometer-alt', 'سرعة التشغيل');
+      const qualityBtn = createControlButton('control-btn', 'fas fa-cog', 'جودة الفيديو');
+      const fullscreenBtn = createControlButton('controlBtn', 'fas fa-expand', 'ملء الشاشة');
+      const pipBtn = createControlButton('control-btn', 'fas fa-compress', 'صورة داخل صورة');
+      
+      // إضافة ازرار الصوت
+      const volumeControl = document.createElement('div');
+      volumeControl.className = 'volume-control';
+      const volumeSlider = document.createElement('div');
+      volumeSlider.className = 'volume-slider';
+      const volumeLevel = document.createElement('div');
+      volumeLevel.className = 'volume-level';
+      const volumeHandle = document.createElement('div');
+      volumeHandle.className = 'volume-handle';
+      volumeLevel.appendChild(volumeHandle);
+      volumeSlider.appendChild(volumeLevel);
+      volumeControl.appendChild(volumeBtn);
+      volumeControl.appendChild(volumeSlider);
+      
+      // قائمة السرعة
+      const speedMenu = createSpeedMenu();
+      const speedControl = document.createElement('div');
+      speedControl.className = 'speed-control';
+      speedControl.appendChild(speedBtn);
+      speedControl.appendChild(speedMenu);
+      
+      // قائمة الجودة
+      const qualityMenu = createQualityMenu();
+      const qualityControl = document.createElement('div');
+      qualityControl.className = 'quality-control';
+      qualityControl.appendChild(qualityBtn);
+      qualityControl.appendChild(qualityMenu);
+      
+      // تجميع الأزرار
+      controlsLeft.appendChild(playPauseBtn);
+      controlsLeft.appendChild(rewindBtn);
+      controlsLeft.appendChild(forwardBtn);
+      controlsLeft.appendChild(volumeControl);
+      
+      controlsRight.appendChild(speedControl);
+      controlsRight.appendChild(qualityControl);
+      controlsRight.appendChild(pipBtn);
+      controlsRight.appendChild(fullscreenBtn);
+      
+      controlsMain.appendChild(controlsLeft);
+      controlsMain.appendChild(controlsRight);
+      
+      // ازرار التقديم والتأخير
+      const skipControls = document.createElement('div');
+      skipControls.className = 'skip-controls';
+      const skipBackward = createSkipButton('⏪', 'رجوع 10 ثواني');
+      const skipForward = createSkipButton('⏩', 'تقديم 10 ثواني');
+      skipControls.appendChild(skipBackward);
+      skipControls.appendChild(skipForward);
+      
+      // مؤشر التقديم
+      const skipIndicator = document.createElement('div');
+      skipIndicator.className = 'skip-indicator';
+      
+      // تجميع كل العناصر
+      customControls.appendChild(progressContainer);
+      customControls.appendChild(timeDisplay);
+      customControls.appendChild(controlsMain);
+      container.appendChild(customControls);
+      container.appendChild(skipControls);
+      container.appendChild(skipIndicator);
+      
+      // إعداد event listeners
+      setupControlEvents(player, {
+        playPauseBtn,
+        rewindBtn,
+        forwardBtn,
+        volumeBtn,
+        volumeSlider,
+        volumeLevel,
+        speedBtn,
+        speedMenu,
+        qualityBtn,
+        qualityMenu,
+        fullscreenBtn,
+        pipBtn,
+        progressContainer,
+        progressBar,
+        timeDisplay,
+        skipBackward,
+        skipForward,
+        skipIndicator
+      });
+    }
+
+    // دالة مساعدة لإنشاء أزرار التحكم
+    function createControlButton(className, icon, title) {
+      const btn = document.createElement('button');
+      btn.className = className;
+      btn.innerHTML = `<i class="${icon}"></i>`;
+      btn.title = title;
+      return btn;
+    }
+
+    // دالة لإنشاء ازرار التقديم
+    function createSkipButton(icon, title) {
+      const btn = document.createElement('div');
+      btn.className = 'skip-btn';
+      btn.innerHTML = `${icon}<div class="skip-tooltip">${title}</div>`;
+      return btn;
+    }
+
+    // دالة لإنشاء قائمة السرعة
+    function createSpeedMenu() {
+      const menu = document.createElement('div');
+      menu.className = 'speed-menu';
+      const speeds = [
+        { value: 0.5, label: '0.5x' },
+        { value: 0.75, label: '0.75x' },
+        { value: 1, label: 'عادي' },
+        { value: 1.25, label: '1.25x' },
+        { value: 1.5, label: '1.5x' },
+        { value: 2, label: '2x' }
+      ];
+      
+      speeds.forEach(speed => {
+        const option = document.createElement('div');
+        option.className = 'speed-option';
+        option.textContent = speed.label;
+        option.dataset.speed = speed.value;
+        if (speed.value === 1) option.classList.add('active');
+        menu.appendChild(option);
+      });
+      
+      return menu;
+    }
+
+    // دالة لإنشاء قائمة الجودة
+    function createQualityMenu() {
+      const menu = document.createElement('div');
+      menu.className = 'quality-menu';
+      const qualities = ['تلقائي', '144p', '240p', '360p', '480p', '720p', '1080p', '4K'];
+      
+      qualities.forEach(quality => {
+        const option = document.createElement('div');
+        option.className = 'quality-option';
+        option.textContent = quality;
+        if (quality === 'تلقائي') option.classList.add('active');
+        menu.appendChild(option);
+      });
+      
+      return menu;
+    }
+
+    // دالة لإعداد أحداث التحكم
+    function setupControlEvents(player, controls) {
+      const {
+        playPauseBtn,
+        rewindBtn,
+        forwardBtn,
+        volumeBtn,
+        volumeSlider,
+        volumeLevel,
+        speedBtn,
+        speedMenu,
+        qualityBtn,
+        qualityMenu,
+        fullscreenBtn,
+        pipBtn,
+        progressContainer,
+        progressBar,
+        timeDisplay,
+        skipBackward,
+        skipForward,
+        skipIndicator
+      } = controls;
+
+      // تشغيل/إيقاف
+      playPauseBtn.addEventListener('click', () => {
+        if (player.paused()) {
+          player.play();
+          playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        } else {
+          player.pause();
+          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        }
+      });
+
+      // رجوع 10 ثواني
+      rewindBtn.addEventListener('click', () => skipTime(-10, player, skipIndicator));
+      skipBackward.addEventListener('click', () => skipTime(-10, player, skipIndicator));
+
+      // تقديم 10 ثواني
+      forwardBtn.addEventListener('click', () => skipTime(10, player, skipIndicator));
+      skipForward.addEventListener('click', () => skipTime(10, player, skipIndicator));
+
+      // التحكم في الصوت
+      let isMuted = false;
+      volumeBtn.addEventListener('click', () => {
+        isMuted = !isMuted;
+        player.muted(isMuted);
+        volumeBtn.innerHTML = isMuted ? 
+          '<i class="fas fa-volume-mute"></i>' : 
+          '<i class="fas fa-volume-up"></i>';
+      });
+
+      // شريط التقدم
+      progressContainer.addEventListener('click', (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        player.currentTime(player.duration() * percent);
+      });
+
+      // تحديث واجهة المستخدم
+      player.on('timeupdate', () => {
+        const currentTime = player.currentTime();
+        const duration = player.duration();
+        const percent = (currentTime / duration) * 100;
+        progressBar.style.width = percent + '%';
+        
+        const currentTimeFormatted = formatTime(currentTime);
+        const durationFormatted = formatTime(duration);
+        timeDisplay.querySelector('.current-time').textContent = currentTimeFormatted;
+        timeDisplay.querySelector('.duration').textContent = durationFormatted;
+      });
+
+      // قائمة السرعة
+      speedBtn.addEventListener('click', () => {
+        speedMenu.classList.toggle('show');
+        qualityMenu.classList.remove('show');
+      });
+
+      speedMenu.querySelectorAll('.speed-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const speed = parseFloat(option.dataset.speed);
+          player.playbackRate(speed);
+          speedMenu.querySelectorAll('.speed-option').forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+          speedMenu.classList.remove('show');
+        });
+      });
+
+      // قائمة الجودة
+      qualityBtn.addEventListener('click', () => {
+        qualityMenu.classList.toggle('show');
+        speedMenu.classList.remove('show');
+      });
+
+      // ملء الشاشة
+      fullscreenBtn.addEventListener('click', () => {
+        if (player.isFullscreen()) {
+          player.exitFullscreen();
+        } else {
+          player.requestFullscreen();
+        }
+      });
+
+      // صورة داخل صورة
+      pipBtn.addEventListener('click', () => {
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled) {
+          player.tech().el.requestPictureInPicture();
+        }
+      });
+
+      // إغلاق القوائم عند النقر خارجها
+      document.addEventListener('click', (e) => {
+        if (!speedBtn.contains(e.target)) speedMenu.classList.remove('show');
+        if (!qualityBtn.contains(e.target)) qualityMenu.classList.remove('show');
+      });
+    }
+
+    // دالة للتقديم/التأخير
+    function skipTime(seconds, player, indicator) {
+      const currentTime = player.currentTime();
+      const newTime = Math.max(0, Math.min(player.duration(), currentTime + seconds));
+      player.currentTime(newTime);
+      
+      const message = seconds > 0 ? `+${seconds} ثانية ⏩` : `${seconds} ثانية ⏪`;
+      indicator.textContent = message;
+      indicator.classList.add('show');
+      
+      setTimeout(() => {
+        indicator.classList.remove('show');
+      }, 1000);
+    }
+
+    // دالة لتنسيق الوقت
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // باقي الدوال تبقى كما هي...
     function addMessageToUI(key, { user, text, time, timestamp }) {
       const div = document.createElement("div");
       div.className = "msg";
@@ -387,12 +1337,10 @@
       
       const isMe = user === username;
       
-      // إنشاء عنصر الوقت الديناميكي
       const timeElement = document.createElement("span");
       timeElement.className = "time";
       timeElement.id = `time-${key}`;
       
-      // حساب الوقت المنقضي
       updateTimeDisplay(key, timestamp, timeElement);
       
       div.innerHTML = `
@@ -415,7 +1363,6 @@
       messagesDiv.appendChild(div);
       scrollToBottom();
       
-      // تحديث الوقت كل دقيقة
       setInterval(() => {
         updateTimeDisplay(key, timestamp, timeElement);
       }, 60000);
@@ -491,7 +1438,6 @@
       overlay.style.display = 'none';
     }
 
-    // وظائف السحب والتغيير في الحجم
     function makeDraggable(element, handle) {
       let offsetX = 0, offsetY = 0;
       let isDragging = false;
@@ -567,7 +1513,6 @@
       handle.addEventListener('touchstart', onResizeStart, { passive: false });
     }
 
-    // وظائف التعرف على روابط الفيديو
     function getYoutubeVideoId(url) {
       if (!url) return null;
       const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
