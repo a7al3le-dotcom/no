@@ -16,6 +16,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.0/shaka-player.compiled.min.js"></script>
 
   <style>
+    /* ... باقي الأنماط كما هي ... */
     html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
     body { font-family: 'Tajawal', sans-serif; background: #f4f7f9; display: flex; flex-direction: column; position: relative; }
     #chat-container { display: flex; flex-direction: column; height: 100%; }
@@ -75,15 +76,12 @@
     .btn { padding: 6px 10px; background: white; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; }
     .btn .count-text { font-size: 14px; margin-right: 4px; }
     
-    #onlineList { position: fixed; top: 10px; right: 10px; border: 1px solid #ccc; background: white; padding: 8px 14px; border-radius: 20px; font-size: 14px; cursor: pointer; z-index: 1000; display: flex; align-items: center; gap: 5px; }
     #usersBox, #setVideoModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1003; display: none; max-height: 80vh; overflow-y: auto; }
     #usersList { max-height: 200px; overflow-y: auto; }
     .user-item { display: flex; align-items: center; gap: 8px; padding: 5px 2px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
     .status-indicator { width: 10px; height: 10px; border-radius: 50%; }
     .status-green { background-color: #28a745; } .status-yellow { background-color: #ffc107; } .status-gray { background-color: #ccc; }
     
-    .delete-btn { display:none; }
-
     #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10000; }
     #loginBox { background: white; padding: 30px; border-radius: 15px; text-align: center; min-width: 300px; }
     #usernameInput { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; font-family: 'Tajawal', sans-serif;}
@@ -91,7 +89,6 @@
     
     #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; display: none; }
     
-    /* ===== مشغل الفيديو المحسّن ===== */
     #pinnedVideoPlayer { 
       position: fixed; 
       top: 50px; 
@@ -142,13 +139,6 @@
       background: #218838;
       transform: rotate(45deg);
     }
-    .video-header .reload-btn.loading {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
     .video-body { 
       width: 100%; 
       background: #000; 
@@ -188,7 +178,6 @@
       right: 2px;
     }
     
-    /* ===== حالة الاتصال ===== */
     .connection-status {
       position: absolute;
       top: 10px;
@@ -253,9 +242,7 @@
       <div class="btn" id="onlineListBtn" title="المتصلين الآن">👥 <span id="count" class="count-text">0</span></div>
     </div>
     
-    <div id="pinnedVideoPlayer">
-      <!-- يتم إنشاء المحتوى ديناميكياً -->
-    </div>
+    <div id="pinnedVideoPlayer"></div>
     
     <div id="setVideoModal">
       <h4>تثبيت فيديو للجميع</h4>
@@ -322,7 +309,6 @@
     const pinnedVideoPlayer = document.getElementById("pinnedVideoPlayer");
     const overlay = document.getElementById("overlay");
 
-    // ===== دوال المساعدة =====
     function escapeHtml(unsafe) { 
       if(!unsafe) return ""; 
       return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); 
@@ -340,10 +326,10 @@
       return (url.match(regex) || [])[1] || null;
     }
     function isDirectVideo(url) {
-      return /\.(mp4|webm|ogv)$/i.test(url);
+      return /\.(mp4|webm|ogv|m3u8|m3u)$/i.test(url);
     }
 
-    // ===== دوال إدارة الاتصال =====
+    // ===== حالة الاتصال =====
     function showConnectionStatus(message, type = 'connected') {
       const statusEl = document.querySelector('.connection-status');
       if (!statusEl) return;
@@ -355,7 +341,7 @@
       }
     }
 
-    // ===== مشغل HLS/Shaka الاحترافي =====
+    // ===== مشغل HLS/Shaka =====
     function destroyHybridPlayer() {
       if (hlsInstance) {
         hlsInstance.destroy();
@@ -391,8 +377,6 @@
           fragLoadingTimeOut: 20000,
           fragLoadingMaxRetry: 6,
           startLevel: -1,
-          abrController: Hls.DefaultConfig.abrController,
-          bufferHelper: Hls.DefaultConfig.bufferHelper,
         });
         hlsInstance = hls;
         hls.loadSource(url);
@@ -497,7 +481,7 @@
       return success;
     }
 
-    // ===== دالة إعادة الاتصال التلقائي =====
+    // ===== إعادة الاتصال التلقائي =====
     function scheduleReconnect(videoElement, url) {
       if (isReconnecting) return;
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
@@ -519,7 +503,6 @@
             isReconnecting = false;
             reconnectAttempts = 0;
             showConnectionStatus('✅ تمت إعادة الاتصال بنجاح', 'connected');
-            // إعادة محاولة التشغيل التلقائي
             if (videoElement.paused) {
               videoElement.play().catch(() => {});
             }
@@ -536,7 +519,6 @@
 
     // ===== إنشاء مشغل الفيديو =====
     function createVideoPlayer(container, videoSource, videoType, isYoutube) {
-      // تنظيف أي مشغل سابق
       destroyHybridPlayer();
       
       const videoEl = document.createElement('video-js');
@@ -544,7 +526,6 @@
       container.innerHTML = '';
       container.appendChild(videoEl);
 
-      // إضافة حالة الاتصال
       const statusDiv = document.createElement('div');
       statusDiv.className = 'connection-status';
       statusDiv.textContent = '⏳ جاري التحميل...';
@@ -567,13 +548,12 @@
         },
       };
       
-      // استخدام Video.js العادي للملفات العادية
+      // للملفات العادية
       if (!isYoutube && !videoType.includes('mpegURL') && !videoType.includes('application/x-mpegURL')) {
         videoPlayerInstance = videojs(videoEl, playerOptions);
         
-        // إضافة مراقبة للانقطاع
         videoEl.addEventListener('error', (e) => {
-          if (videoEl.networkState === 2) { // NETWORK_LOADING
+          if (videoEl.networkState === 2) {
             showConnectionStatus('⚠️ انقطاع البث، جاري إعادة المحاولة...', 'reconnecting');
             if (!isReconnecting) {
               scheduleReconnect(videoEl, videoSource);
@@ -581,7 +561,6 @@
           }
         });
 
-        // مراقبة التوقف غير المتوقع
         videoEl.addEventListener('stalled', () => {
           if (!videoEl.paused && videoEl.readyState < 3) {
             showConnectionStatus('⚠️ توقف البث، جاري الاسترداد...', 'reconnecting');
@@ -594,16 +573,14 @@
         return videoPlayerInstance;
       }
 
-      // للبث المباشر (HLS) نستخدم المحرك الهجين
-      if (videoType.includes('mpegURL') || videoType.includes('application/x-mpegURL')) {
-        // محاولة التشغيل عبر المحرك الهجين
+      // للبث المباشر (HLS)
+      if (videoType.includes('mpegURL') || videoType.includes('application/x-mpegURL') || videoSource.includes('/play/')) {
         loadStreamWithHybrid(videoEl, videoSource).then(success => {
           if (!success) {
             showConnectionStatus('❌ تعذر تشغيل البث', 'disconnected');
           }
         });
 
-        // مراقبة الانقطاع للمحرك الهجين
         const checkConnection = setInterval(() => {
           if (videoEl.readyState < 2 && !videoEl.paused) {
             showConnectionStatus('⚠️ انقطاع البث...', 'reconnecting');
@@ -613,10 +590,8 @@
           }
         }, 5000);
 
-        // حفظ مرجع لتنظيفه لاحقاً
         videoEl._connectionCheck = checkConnection;
 
-        // إضافة زر تحديث في شريط التحكم
         videoEl.addEventListener('loadedmetadata', () => {
           const controlBar = videoEl.querySelector('.vjs-control-bar');
           if (controlBar) {
@@ -637,15 +612,13 @@
         return null;
       }
 
-      // تويتر أو غيره
       videoPlayerInstance = videojs(videoEl, playerOptions);
       return videoPlayerInstance;
     }
 
-    // ===== دالة إعادة تحميل البث =====
+    // ===== إعادة تحميل البث =====
     function reloadStream(videoElement, url) {
       if (!videoElement) return;
-      
       showConnectionStatus('🔄 جاري تحديث البث...', 'reconnecting');
       reconnectAttempts = 0;
       isReconnecting = false;
@@ -653,11 +626,7 @@
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
       }
-      
-      // إعادة تعيين المشغل
       destroyHybridPlayer();
-      
-      // إعادة محاولة التحميل
       loadStreamWithHybrid(videoElement, url).then(success => {
         if (success) {
           showConnectionStatus('✅ تم تحديث البث بنجاح', 'connected');
@@ -683,7 +652,6 @@
             currentVideoIndex = idx;
             destroyHybridPlayer();
             createVideoPlayer(container, v.url, 'video/mp4', false);
-            
             document.querySelectorAll('.video-selector-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
           }
@@ -869,7 +837,7 @@
       handle.addEventListener('touchstart', onResizeStart, { passive: false });
     }
 
-    // ===== دالة تسجيل الدخول =====
+    // ===== تسجيل الدخول =====
     function attemptLogin() {
       let inputName = usernameInput.value.trim();
       const invalidChars = /[.#$\\[\\]]/;
@@ -935,7 +903,7 @@
         renderUsersList(snap.val() || {});
       });
 
-      // ===== معالجة تثبيت الفيديو =====
+      // ===== معالجة تثبيت الفيديو (المعدلة) =====
       submitVideoUrlBtn.onclick = () => {
         const url = videoUrlInput.value.trim();
         if (!url) return;
@@ -946,10 +914,13 @@
           pinnedVideoRef.set({ type: 'youtube', id: youtubeId, setBy: username });
         } else if (tweetId) {
           pinnedVideoRef.set({ type: 'twitter', id: tweetId, setBy: username });
-        } else if (url.toLowerCase().includes('.m3u')) {
+        } else if (url.toLowerCase().includes('.m3u') || url.toLowerCase().includes('.m3u8')) {
           pinnedVideoRef.set({ type: 'm3u', url: url, setBy: username });
         } else if (isDirectVideo(url)) {
           pinnedVideoRef.set({ type: 'direct', url: url, setBy: username });
+        } else if (url.includes('/play/') || url.match(/[a-zA-Z0-9_-]{40,}/)) {
+          // دعم الروابط الخام مثل رابط VLC
+          pinnedVideoRef.set({ type: 'raw', url: url, setBy: username });
         } else {
           alert("الرابط غير مدعوم.");
           return;
@@ -985,7 +956,6 @@
           const controlsDiv = document.createElement('div');
           controlsDiv.className = 'header-controls';
           
-          // زر إعادة التحميل
           const reloadBtn = document.createElement('button');
           reloadBtn.className = 'reload-btn';
           reloadBtn.innerHTML = '🔄';
@@ -1027,7 +997,8 @@
             currentVideoUrl = `https://www.youtube.com/watch?v=${data.id}`;
             currentVideoType = 'video/youtube';
             createVideoPlayer(body, currentVideoUrl, 'video/youtube', true);
-          } else if (data.type === 'm3u') {
+          } else if (data.type === 'm3u' || data.type === 'raw') {
+            // معالجة الروابط الخام و m3u بنفس الطريقة
             currentVideoUrl = data.url;
             currentVideoType = 'application/x-mpegURL';
             createVideoPlayer(body, currentVideoUrl, 'application/x-mpegURL', false);
@@ -1059,4 +1030,4 @@
   });
 </script>
 </body>
-  </html>
+</html>
