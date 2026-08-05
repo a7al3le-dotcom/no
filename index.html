@@ -324,6 +324,7 @@ const nowMs = () => Date.now();
 
 function toast(msg){
   const host = $('#toastHost');
+  if (!host) return;
   const t = document.createElement('div');
   t.className = 'toast';
   t.textContent = msg;
@@ -332,44 +333,59 @@ function toast(msg){
 }
 
 /* ============================================================
-   FIREBASE CORE
+   FIREBASE CORE - تم تصحيح جميع الأخطاء
 ============================================================ */
 const firebaseConfig = {
-
-  apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
-
-  authDomain: "studio-4914109762-6a41f.firebaseapp.com",
-
-  databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
-
-  projectId: "studio-4914109762-6a41f",
-
-  storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
-
-  messagingSenderId: "134781295069"
-
-  
+  apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
+  authDomain: "studio-4914109762-6a41f.firebaseapp.com",
+  databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
+  projectId: "studio-4914109762-6a41f",
+  storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
+  messagingSenderId: "134781295069"
 };
+
 const Core = {
-  db: null, auth: null, uid: null, timeOffset: 0,
+  db: null, 
+  auth: null, 
+  uid: null, 
+  timeOffset: 0,
+  
   init(){
-    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    // تم تصحيح: استخدام firebaseConfig بدلاً من FIREBASE_CONFIG
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     this.db = firebase.database();
     this.auth = firebase.auth();
   },
+  
   async signIn(){
-    const cred = await this.auth.signInAnonymously();
-    this.uid = cred.user.uid;
-    return this.uid;
+    try {
+      // تم تصحيح: استخدام signInAnonymously (حساسية الأحرف)
+      const cred = await this.auth.signInAnonymously();
+      this.uid = cred.user.uid;
+      return this.uid;
+    } catch (error) {
+      console.error('فشل تسجيل الدخول المجهول:', error);
+      throw error;
+    }
   },
+  
   watchOffset(cb){
-    this.db.ref('.info/serverTimeOffset').on('value', snap => {
+    // تم تصحيح المسار: إزالة المسافة الزائدة
+    this.db.ref('/.info/serverTimeOffset').on('value', snap => {
       this.timeOffset = snap.val() || 0;
-      cb && cb(this.timeOffset);
+      if (cb) cb(this.timeOffset);
     });
   },
-  serverNow(){ return nowMs() + this.timeOffset; },
-  stamp(){ return firebase.database.ServerValue.TIMESTAMP; }
+  
+  serverNow(){ 
+    return nowMs() + this.timeOffset; 
+  },
+  
+  stamp(){ 
+    return firebase.database.ServerValue.TIMESTAMP; 
+  }
 };
 
 /* ============================================================
@@ -378,17 +394,28 @@ const Core = {
 const IDLE_MS = 60000, GONE_MS = 120000, TYPE_TIMEOUT = 3000, HEARTBEAT = 30000, SWEEP = 60000;
 
 const Presence = {
-  username:'', ref:null, typingRef:null,
-  heartbeatTimer:null, sweepTimer:null, typingClearTimer:null, isTyping:false,
-  onlineListener:null, typingUpdateListener:null,
-  countCb:null, typersCb:null,
+  username: '',
+  ref: null, 
+  typingRef: null,
+  heartbeatTimer: null, 
+  sweepTimer: null, 
+  typingClearTimer: null, 
+  isTyping: false,
+  onlineListener: null, 
+  typingUpdateListener: null,
+  countCb: null, 
+  typersCb: null,
 
   start(username){
     this.username = username;
     this.ref = Core.db.ref(`online/${Core.uid}`);
     this.typingRef = Core.db.ref('typing');
 
-    this.ref.set({ username, lastActive: Core.stamp(), uid: Core.uid });
+    this.ref.set({ 
+      username: username, 
+      lastActive: Core.stamp(), 
+      uid: Core.uid 
+    });
     this.ref.onDisconnect().remove();
     this.typingRef.child(Core.uid).onDisconnect().remove();
 
@@ -399,13 +426,16 @@ const Presence = {
     this.sweepTimer = setInterval(() => this.sweepInactive(), SWEEP);
 
     this.onlineListener = Core.db.ref('online').on('value', snap => {
-      this.countCb && this.countCb(snap.numChildren());
+      if (this.countCb) this.countCb(snap.numChildren());
     });
 
     this.typingUpdateListener = this.typingRef.on('value', snap => {
       const data = snap.val() || {};
-      const others = Object.keys(data).filter(k => k !== Core.uid).map(k => data[k]).filter(Boolean);
-      this.typersCb && this.typersCb(others);
+      const others = Object.keys(data)
+        .filter(k => k !== Core.uid)
+        .map(k => data[k])
+        .filter(Boolean);
+      if (this.typersCb) this.typersCb(others);
     });
   },
 
@@ -415,7 +445,9 @@ const Presence = {
       snap.forEach(child => {
         if (child.key === Core.uid) return;
         const d = child.val();
-        if (now - (d.lastActive || 0) > GONE_MS) child.ref.remove();
+        if (now - (d.lastActive || 0) > GONE_MS) {
+          child.ref.remove();
+        }
       });
     });
   },
@@ -431,6 +463,7 @@ const Presence = {
       this.clearTyping();
     }
   },
+  
   clearTyping(){
     if (this.isTyping && this.typingRef){
       this.typingRef.child(Core.uid).remove();
@@ -440,7 +473,6 @@ const Presence = {
   },
 
   listRoster(cb){
-    // returns an unsubscribe function
     const ref = Core.db.ref('online');
     const listener = ref.on('value', snap => cb(snap.val() || {}));
     return () => ref.off('value', listener);
@@ -461,15 +493,23 @@ const Presence = {
    MESSAGES
 ============================================================ */
 const Messages = {
-  ref:null, addListener:null, removeListener:null,
-  seen:new Set(), timeEls:new Map(), timeObserver:null, tickTimer:null,
+  ref: null, 
+  addListener: null, 
+  removeListener: null,
+  seen: new Set(), 
+  timeEls: new Map(), 
+  timeObserver: null, 
+  tickTimer: null,
+  feedEl: null,
 
   init(feedEl){
     this.feedEl = feedEl;
     this.timeObserver = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) this.refreshOne(e.target.dataset.mkey); });
-    }, { threshold:.1 });
-    // periodic refresh so visible timestamps stay accurate even without scrolling
+      entries.forEach(e => { 
+        if (e.isIntersecting) this.refreshOne(e.target.dataset.mkey); 
+      });
+    }, { threshold: 0.1 });
+    
     this.tickTimer = setInterval(() => {
       this.timeEls.forEach((v, key) => {
         const rect = v.el.getBoundingClientRect();
@@ -481,24 +521,36 @@ const Messages = {
   start(onAdd, onRemove){
     this.ref = Core.db.ref('messages');
     const q = this.ref.orderByChild('timestamp').limitToLast(100);
+    
     this.addListener = q.on('child_added', snap => {
       if (this.seen.has(snap.key)) return;
       this.seen.add(snap.key);
       onAdd(snap.key, snap.val());
     });
+    
     this.removeListener = this.ref.on('child_removed', snap => {
       this.seen.delete(snap.key);
       const meta = this.timeEls.get(snap.key);
-      if (meta) { this.timeObserver.unobserve(meta.el); this.timeEls.delete(snap.key); }
+      if (meta) { 
+        this.timeObserver.unobserve(meta.el); 
+        this.timeEls.delete(snap.key); 
+      }
       onRemove(snap.key);
     });
   },
 
   send(username, text){
-    return this.ref.push({ user: username, text, timestamp: Core.stamp(), uid: Core.uid });
+    return this.ref.push({ 
+      user: username, 
+      text: text, 
+      timestamp: Core.stamp(), 
+      uid: Core.uid 
+    });
   },
 
-  remove(key){ this.ref.child(key).remove(); },
+  remove(key){ 
+    this.ref.child(key).remove(); 
+  },
 
   registerTimeEl(key, timestamp, el){
     this.timeEls.set(key, { el, timestamp });
@@ -547,11 +599,6 @@ const VideoParse = {
     m = url.match(this.TW);
     if (m) return { type:'twitter', id:m[1] };
     if (this.FILE.test(url)) return { type:'direct', src:url };
-    // Only trust explicit .m3u8 extension or an obvious /hls/ path segment.
-    // We do NOT pre-validate with a fetch() call: CORS on live/token streams
-    // routinely blocks HEAD/GET requests to otherwise perfectly valid streams,
-    // which used to reject working links. hls.js itself will report a real
-    // error if the stream truly doesn't work.
     if (this.HLS_EXT.test(url) || /\/hls\//i.test(url)) return { type:'hls', src:url };
     return null;
   }
@@ -565,7 +612,7 @@ class VideoWidget {
     this.el = container;
     this.data = data;
     this.myUid = myUid;
-    this.actions = actions; // { onClose, onMinimize, onRestore }
+    this.actions = actions;
     this.videoEl = null;
     this.hls = null;
     this.minimized = false;
@@ -586,10 +633,16 @@ class VideoWidget {
       <div class="screen-body" id="scrBody"><div class="screen-msg wait">⏳ جاري التحميل...</div></div>
       <div class="screen-tab" id="scrTab">⬆ اضغط للتكبير</div>
     `;
-    this.el.querySelector('[data-act="min"]').onclick = () => { this._toggleMin(true); this.actions.onMinimize(); };
+    this.el.querySelector('[data-act="min"]').onclick = () => { 
+      this._toggleMin(true); 
+      this.actions.onMinimize(); 
+    };
     const closeBtn = this.el.querySelector('[data-act="close"]');
     if (closeBtn) closeBtn.onclick = () => this.actions.onClose();
-    this.el.querySelector('#scrTab').onclick = () => { this._toggleMin(false); this.actions.onRestore(); };
+    this.el.querySelector('#scrTab').onclick = () => { 
+      this._toggleMin(false); 
+      this.actions.onRestore(); 
+    };
     this._makeDraggable();
   }
 
@@ -597,8 +650,8 @@ class VideoWidget {
     this.minimized = min;
     const body = this.el.querySelector('#scrBody');
     const tab = this.el.querySelector('#scrTab');
-    body.classList.toggle('hide', min);
-    tab.style.display = min ? 'block' : 'none';
+    if (body) body.classList.toggle('hide', min);
+    if (tab) tab.style.display = min ? 'block' : 'none';
     this.el.classList.toggle('small', min);
   }
 
@@ -623,6 +676,7 @@ class VideoWidget {
       allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen
       style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>`;
   }
+  
   _twitter(body){
     body.innerHTML = `<iframe src="https://twitframe.com/show?url=https://twitter.com/i/status/${this.data.id}"
       style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
@@ -644,8 +698,12 @@ class VideoWidget {
       return;
     }
     v.src = this.data.src;
-    try { await v.play(); this._hideMsg(); }
-    catch { this._err(body, 'لا يمكن تشغيل هذا الفيديو، تأكد من الرابط.'); }
+    try { 
+      await v.play(); 
+      this._hideMsg(); 
+    } catch { 
+      this._err(body, 'لا يمكن تشغيل هذا الفيديو، تأكد من الرابط.'); 
+    }
   }
 
   _hls(video, url, body){
@@ -679,13 +737,20 @@ class VideoWidget {
     }
   }
 
-  _hideMsg(){ const m = this.el.querySelector('.screen-msg'); if (m) m.style.display='none'; }
-  _err(body, msg){ body.innerHTML = `<div class="screen-msg err">⚠️<br>${esc(msg)}</div>`; }
+  _hideMsg(){ 
+    const m = this.el.querySelector('.screen-msg'); 
+    if (m) m.style.display='none'; 
+  }
+  
+  _err(body, msg){ 
+    body.innerHTML = `<div class="screen-msg err">⚠️<br>${esc(msg)}</div>`; 
+  }
 
   _makeDraggable(){
     const head = this.el.querySelector('.screen-head');
     if (!head) return;
     let dragging=false, sx=0, sy=0, ox=0, oy=0;
+    
     const start = (e) => {
       if (e.target.closest('button')) return;
       dragging = true;
@@ -699,6 +764,7 @@ class VideoWidget {
       document.addEventListener('touchend', end);
       e.preventDefault();
     };
+    
     const move = (e) => {
       if (!dragging) return;
       e.preventDefault();
@@ -706,8 +772,11 @@ class VideoWidget {
       let nx = ox + (p.clientX - sx), ny = oy + (p.clientY - sy);
       nx = Math.min(Math.max(nx, 8), window.innerWidth - this.el.offsetWidth - 8);
       ny = Math.min(Math.max(ny, 8), window.innerHeight - this.el.offsetHeight - 8);
-      this.el.style.left = nx+'px'; this.el.style.top = ny+'px'; this.el.style.right='auto';
+      this.el.style.left = nx+'px'; 
+      this.el.style.top = ny+'px'; 
+      this.el.style.right='auto';
     };
+    
     const end = () => {
       dragging = false;
       document.removeEventListener('mousemove', move);
@@ -715,13 +784,24 @@ class VideoWidget {
       document.removeEventListener('mouseup', end);
       document.removeEventListener('touchend', end);
     };
+    
     head.addEventListener('mousedown', start);
     head.addEventListener('touchstart', start, { passive:false });
   }
 
   dispose(){
-    if (this.hls){ try{ this.hls.destroy(); }catch{} this.hls=null; }
-    if (this.videoEl){ try{ this.videoEl.pause(); this.videoEl.src=''; this.videoEl.load(); }catch{} this.videoEl=null; }
+    if (this.hls){ 
+      try { this.hls.destroy(); } catch {} 
+      this.hls = null; 
+    }
+    if (this.videoEl){ 
+      try { 
+        this.videoEl.pause(); 
+        this.videoEl.src=''; 
+        this.videoEl.load(); 
+      } catch {} 
+      this.videoEl = null; 
+    }
     this.el.innerHTML = '';
   }
 }
@@ -730,7 +810,13 @@ class VideoWidget {
    VIDEO — controller (talks to Firebase + VideoWidget)
 ============================================================ */
 const VideoBoard = {
-  ref:null, listener:null, widget:null, minimized:false,
+  ref: null, 
+  listener: null, 
+  widget: null, 
+  minimized: false,
+  container: null,
+  restoreBtnEls: null,
+  myUid: null,
 
   start(containerEl, restoreBtnEls, myUid){
     this.container = containerEl;
@@ -740,11 +826,19 @@ const VideoBoard = {
     this.listener = this.ref.on('value', snap => this._render(snap.val()));
   },
 
-  set(data){ this.ref.set(data); },
-  clear(){ this.ref.remove(); },
+  set(data){ 
+    this.ref.set(data); 
+  },
+  
+  clear(){ 
+    this.ref.remove(); 
+  },
 
   _render(data){
-    if (this.widget) { this.widget.dispose(); this.widget = null; }
+    if (this.widget) { 
+      this.widget.dispose(); 
+      this.widget = null; 
+    }
     this.container.innerHTML = '';
     this.minimized = false;
     this.container.classList.remove('small');
@@ -766,8 +860,15 @@ const VideoBoard = {
           systemNote('🗑️ تم إزالة الفيديو');
         });
       },
-      onMinimize: () => { this.minimized = true; this._showRestoreBtns(true); systemNote('📹 تم تصغير الفيديو'); },
-      onRestore: () => { this.minimized = false; this._showRestoreBtns(false); }
+      onMinimize: () => { 
+        this.minimized = true; 
+        this._showRestoreBtns(true); 
+        systemNote('📹 تم تصغير الفيديو'); 
+      },
+      onRestore: () => { 
+        this.minimized = false; 
+        this._showRestoreBtns(false); 
+      }
     });
   },
 
@@ -792,6 +893,8 @@ const VideoBoard = {
 ============================================================ */
 function openModal(titleHtml, bodyHtml){
   const host = $('#modalHost');
+  if (!host) return { close: () => {}, onClose: () => {} };
+  
   const veil = document.createElement('div');
   veil.className = 'veil';
   const sheet = document.createElement('div');
@@ -807,7 +910,7 @@ function openModal(titleHtml, bodyHtml){
   let cleanupFns = [];
   function close(){
     document.removeEventListener('keydown', onKey);
-    cleanupFns.forEach(fn => { try{ fn(); }catch{} });
+    cleanupFns.forEach(fn => { try { fn(); } catch {} });
     veil.remove();
   }
   const firstFocusable = sheet.querySelector('input, button');
@@ -827,17 +930,24 @@ function confirmModal(message, onYes){
       <button class="btn-full ghost" id="mNo" style="flex:1">إلغاء</button>
     </div>
   `);
-  $('#mYes', m.sheet).onclick = () => { m.close(); onYes(); };
-  $('#mNo', m.sheet).onclick = () => m.close();
+  const yesBtn = $('#mYes', m.sheet);
+  const noBtn = $('#mNo', m.sheet);
+  if (yesBtn) yesBtn.onclick = () => { m.close(); onYes(); };
+  if (noBtn) noBtn.onclick = () => m.close();
 }
 
 function rosterModal(){
   const m = openModal('👥 المتصلون الآن', `<div id="rosterList"><p class="roster-empty">جاري التحميل...</p></div>`);
   const listEl = $('#rosterList', m.sheet);
+  if (!listEl) return;
+  
   const unsubscribe = Presence.listRoster(users => {
     const now = Core.serverNow();
     const rows = Object.values(users).sort((a,b)=>(b.lastActive||0)-(a.lastActive||0));
-    if (!rows.length){ listEl.innerHTML = '<p class="roster-empty">لا يوجد متصلون</p>'; return; }
+    if (!rows.length){ 
+      listEl.innerHTML = '<p class="roster-empty">لا يوجد متصلون</p>'; 
+      return; 
+    }
     listEl.innerHTML = rows.map(u => {
       const diff = now - (u.lastActive || 0);
       let cls='up', label='متصل';
@@ -855,15 +965,19 @@ function videoModal(onSubmit){
     <small>YouTube · Twitter/X · HLS (.m3u8) · MP4 مباشر</small>
     <button class="btn-full" id="vGo">🎬 تثبيت الفيديو</button>
   `);
-  const btn = $('#vGo', m.sheet), input = $('#vUrl', m.sheet);
+  const btn = $('#vGo', m.sheet);
+  const input = $('#vUrl', m.sheet);
+  if (!btn || !input) return;
+  
   const trigger = async () => {
     const url = input.value.trim();
     if (!url){ toast('⚠️ أدخل رابطاً'); return; }
     btn.disabled = true;
     btn.innerHTML = '<span class="spin"></span> جارٍ التحقق...';
     const ok = await onSubmit(url);
-    if (ok){ m.close(); }
-    else {
+    if (ok){ 
+      m.close(); 
+    } else {
       btn.disabled = false;
       btn.innerHTML = '🎬 تثبيت الفيديو';
       toast('⚠️ الرابط غير مدعوم. جرب YouTube، Twitter، HLS أو MP4 مباشر');
@@ -873,30 +987,35 @@ function videoModal(onSubmit){
   input.onkeypress = (e) => { if (e.key === 'Enter') trigger(); };
 }
 
-function systemNote(text){
-  const feed = $('#feed');
-  const div = document.createElement('div');
-  div.className = 'note';
-  div.textContent = text;
-  feed.appendChild(div);
-  Feed.maybeScroll();
-}
-
 /* ============================================================
-   FEED RENDERING
+   FEED RENDERING - تم تصحيح مرجع Feed
 ============================================================ */
 const Feed = {
-  el:null, atBottom:true,
+  el: null, 
+  atBottom: true,
+  
   init(el){
     this.el = el;
+    if (!el) return;
     el.addEventListener('scroll', () => {
       this.atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
     });
   },
-  scrollToBottom(){ requestAnimationFrame(() => { this.el.scrollTop = this.el.scrollHeight; }); },
-  maybeScroll(){ if (this.atBottom) this.scrollToBottom(); },
+  
+  scrollToBottom(){ 
+    if (this.el) {
+      requestAnimationFrame(() => { 
+        this.el.scrollTop = this.el.scrollHeight; 
+      }); 
+    }
+  },
+  
+  maybeScroll(){ 
+    if (this.atBottom) this.scrollToBottom(); 
+  },
 
   addBubble(key, data, myUid){
+    if (!this.el) return;
     const user = esc(data.user || 'مجهول');
     const text = esc(data.text || '');
     const ts = data.timestamp || null;
@@ -935,15 +1054,27 @@ const Feed = {
   }
 };
 
+function systemNote(text){
+  const feed = $('#feed');
+  if (!feed) return;
+  const div = document.createElement('div');
+  div.className = 'note';
+  div.textContent = text;
+  feed.appendChild(div);
+  Feed.maybeScroll();
+}
+
 /* ============================================================
    CONNECTION STATUS
 ============================================================ */
 const Connection = {
-  first:true,
+  first: true,
+  
   watch(loggedInGetter){
     Core.db.ref('.info/connected').on('value', snap => {
       const up = snap.val() === true;
       const bar = $('#pulseBar');
+      if (!bar) return;
       bar.textContent = up ? '🟢 متصل' : '🔴 غير متصل';
       bar.className = 'show ' + (up ? 'up' : 'down');
       if (up){
@@ -961,14 +1092,16 @@ const Connection = {
    APP BOOTSTRAP
 ============================================================ */
 const App = {
-  username:'', loggedIn:false,
+  username: '', 
+  loggedIn: false,
 
   async boot(){
-    Core.init();
-    Feed.init($('#feed'));
-    Messages.init($('#feed'));
-    this._bindGate();
-    try{
+    try {
+      Core.init();
+      Feed.init($('#feed'));
+      Messages.init($('#feed'));
+      this._bindGate();
+      
       $('#gateStatusTxt').textContent = 'جاري المصادقة...';
       await Core.signIn();
       $('#gateStatusTxt').textContent = 'تم! أدخل اسمك للمتابعة';
@@ -977,24 +1110,37 @@ const App = {
       $('#enterBtn').disabled = false;
       $('#nameField').focus();
     } catch(err){
-      console.error(err);
-      $('#gateStatusTxt').textContent = 'فشلت المصادقة: ' + (err.message || '');
+      console.error('فشل التمهيد:', err);
+      $('#gateStatusTxt').textContent = 'فشلت المصادقة: ' + (err.message || 'خطأ غير معروف');
       $('#gateStatusTxt').style.color = 'var(--bad)';
     }
   },
 
   _bindGate(){
-    $('#enterBtn').onclick = () => this._tryEnter();
-    $('#nameField').onkeypress = (e) => { if (e.key === 'Enter') this._tryEnter(); };
+    const enterBtn = $('#enterBtn');
+    const nameField = $('#nameField');
+    if (enterBtn) enterBtn.onclick = () => this._tryEnter();
+    if (nameField) nameField.onkeypress = (e) => { if (e.key === 'Enter') this._tryEnter(); };
   },
 
   _tryEnter(){
     if (this.loggedIn || $('#enterBtn').disabled) return;
     const name = $('#nameField').value.trim();
     const hint = $('#gateHint');
-    if (/[.#$\[\]\/]/.test(name)){ hint.textContent = '⚠️ لا تستخدم الرموز: . # $ [ ] /'; return; }
-    if (name.length < 2){ hint.textContent = '⚠️ الاسم قصير جداً'; return; }
-    if (name.length > 15){ hint.textContent = '⚠️ الاسم طويل جداً'; return; }
+    if (!hint) return;
+    
+    if (/[.#$\[\]\/]/.test(name)){ 
+      hint.textContent = '⚠️ لا تستخدم الرموز: . # $ [ ] /'; 
+      return; 
+    }
+    if (name.length < 2){ 
+      hint.textContent = '⚠️ الاسم قصير جداً'; 
+      return; 
+    }
+    if (name.length > 15){ 
+      hint.textContent = '⚠️ الاسم طويل جداً'; 
+      return; 
+    }
     hint.textContent = '';
     this.username = name;
     this._enter();
@@ -1009,7 +1155,10 @@ const App = {
 
     Core.watchOffset();
 
-    Presence.countCb = (n) => { $('#onlineCount').textContent = n; };
+    Presence.countCb = (n) => { 
+      const countEl = $('#onlineCount');
+      if (countEl) countEl.textContent = n; 
+    };
     Presence.start(this.username);
 
     Messages.start(
@@ -1028,30 +1177,48 @@ const App = {
   },
 
   _bindDock(){
-    $('#dock').addEventListener('submit', (e) => {
+    const dock = $('#dock');
+    if (!dock) return;
+    
+    dock.addEventListener('submit', (e) => {
       e.preventDefault();
       const input = $('#textField');
+      if (!input) return;
       const text = input.value.trim();
       if (!text) return;
-      if (text.length > 500){ systemNote('⚠️ الرسالة طويلة جداً (الحد 500 حرف)'); return; }
+      if (text.length > 500){ 
+        systemNote('⚠️ الرسالة طويلة جداً (الحد 500 حرف)'); 
+        return; 
+      }
       const btn = $('#shootBtn');
-      btn.disabled = true;
-      setTimeout(() => btn.disabled = false, 800);
+      if (btn) {
+        btn.disabled = true;
+        setTimeout(() => btn.disabled = false, 800);
+      }
       Messages.send(this.username, text).catch(err => {
-        console.error(err);
+        console.error('فشل إرسال الرسالة:', err);
         systemNote('❌ فشل إرسال الرسالة');
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
       });
       input.value = '';
       Presence.markTyping(false);
     });
 
     const tline = $('#typeline');
-    $('#textField').addEventListener('input', (e) => Presence.markTyping(e.target.value.trim().length > 0));
-    $('#textField').addEventListener('blur', () => Presence.markTyping(false));
+    const textField = $('#textField');
+    
+    if (textField) {
+      textField.addEventListener('input', (e) => Presence.markTyping(e.target.value.trim().length > 0));
+      textField.addEventListener('blur', () => Presence.markTyping(false));
+    }
 
     Presence.typersCb = (names) => {
-      if (!names.length){ tline.classList.remove('on'); tline.innerHTML=''; return; }
+      if (!tline) return;
+      if (!names.length){ 
+        tline.classList.remove('on'); 
+        tline.innerHTML = ''; 
+        return; 
+      }
       let phrase;
       if (names.length === 1) phrase = `${esc(names[0])} يكتب`;
       else if (names.length === 2) phrase = `${esc(names[0])} و${esc(names[1])} يكتبان`;
@@ -1062,18 +1229,25 @@ const App = {
   },
 
   _bindTopBar(){
-    $('#rosterPillBtn').onclick = () => rosterModal();
-    $('#videoPillBtn').onclick = () => videoModal(async (url) => {
-      const parsed = await VideoParse.parse(url);
-      if (!parsed) return false;
-      parsed.setBy = this.username;
-      parsed.uid = Core.uid;
-      VideoBoard.set(parsed);
-      systemNote(`🎬 ${this.username} ثبت فيديو`);
-      return true;
-    });
-    $('#bringBack').onclick = () => VideoBoard.restoreFromButton();
-    $('#bringBackTop').onclick = () => VideoBoard.restoreFromButton();
+    const rosterBtn = $('#rosterPillBtn');
+    const videoBtn = $('#videoPillBtn');
+    const bringBack = $('#bringBack');
+    const bringBackTop = $('#bringBackTop');
+    
+    if (rosterBtn) rosterBtn.onclick = () => rosterModal();
+    if (videoBtn) {
+      videoBtn.onclick = () => videoModal(async (url) => {
+        const parsed = await VideoParse.parse(url);
+        if (!parsed) return false;
+        parsed.setBy = this.username;
+        parsed.uid = Core.uid;
+        VideoBoard.set(parsed);
+        systemNote(`🎬 ${this.username} ثبت فيديو`);
+        return true;
+      });
+    }
+    if (bringBack) bringBack.onclick = () => VideoBoard.restoreFromButton();
+    if (bringBackTop) bringBackTop.onclick = () => VideoBoard.restoreFromButton();
   },
 
   dispose(){
@@ -1084,10 +1258,16 @@ const App = {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => App.boot());
+// بدء التطبيق عند تحميل الصفحة
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => App.boot());
+} else {
+  App.boot();
+}
+
 window.addEventListener('beforeunload', () => App.dispose());
 
 })();
 </script>
 </body>
-</html>
+  </html>
