@@ -1,1077 +1,1086 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>شات نوف - مشغل احترافي</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-  <script src="https://unpkg.com/videojs-youtube/dist/Youtube.min.js"></script>
-  
-  <!-- hls.js للبث HLS -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>صفحة نوف </title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --ink:#f4f6fb; --ink-dim:#8b93a7; --ink-faint:#5b6478;
+    --surface-0:#0d0f16; --surface-1:#151826; --surface-2:#1c2032; --surface-3:#262c42;
+    --line:#2a2f45;
+    --brand-a:#7c5cff; --brand-b:#22d3ee;
+    --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --r-sm:10px; --r-md:16px; --r-lg:26px;
+    --shadow:0 20px 50px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Tajawal',sans-serif; background:var(--surface-0); color:var(--ink);
+    height:100dvh; overflow:hidden; display:flex; flex-direction:column;
+    -webkit-tap-highlight-color:transparent; user-select:none;
+  }
+  ::selection{background:rgba(124,92,255,.35);}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--surface-3); border-radius:3px;}
 
-  <style>
-    /* ===== جميع الأنماط السابقة مع تعديل بسيط ===== */
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-    body { font-family: 'Tajawal', sans-serif; background: #f4f7f9; display: flex; flex-direction: column; position: relative; }
-    #chat-container { display: flex; flex-direction: column; height: 100%; }
-    
-    #messages { flex: 1; overflow-y: auto; padding: 15px; background: #fff; scroll-behavior: smooth; }
-    
-    .msg { margin: 8px 0; display: flex; gap: 10px; align-items: center; direction: ltr; text-align: left; font-size: 15px; line-height: 1.4; }
-    .sys { text-align: center; color: #888; font-size: 12px; margin: 10px auto; font-style: italic; background-color: #f0f0f0; padding: 4px 10px; border-radius: 12px; transition: opacity 0.5s; }
-    
-    .user { font-weight: bold; color: #005c97; }
-    
-    .time { font-size: 11px; color: #999; min-width: 40px; }
-    
-    #inputArea {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      background: #ffffff;
-      border-top: none;
-    }
+  /* ---------- Gate (login) ---------- */
+  #gate{
+    position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(124,92,255,.25), transparent 60%),
+      radial-gradient(1000px 500px at 100% 110%, rgba(34,211,238,.18), transparent 60%),
+      var(--surface-0);
+  }
+  #gateCard{
+    width:92%; max-width:400px; background:rgba(21,24,38,.75); backdrop-filter:blur(18px);
+    border:1px solid var(--line); border-radius:var(--r-lg); padding:2.2rem 1.8rem; box-shadow:var(--shadow);
+    text-align:center;
+  }
+  #gateCard .logo{
+    width:56px; height:56px; margin:0 auto 1rem; border-radius:18px;
+    background:linear-gradient(135deg,var(--brand-a),var(--brand-b));
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+  }
+  #gateCard h1{font-size:1.5rem; font-weight:800; margin-bottom:.35rem;}
+  #gateCard p.sub{color:var(--ink-dim); font-size:.85rem; margin-bottom:1.4rem;}
+  #gateStatus{
+    font-size:.8rem; color:var(--ink-dim); min-height:18px; margin-bottom:.9rem;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .dot-pulse{width:7px; height:7px; border-radius:50%; background:var(--brand-b); animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:.3; transform:scale(.8);}50%{opacity:1; transform:scale(1);}}
+  #nameField{
+    width:100%; padding:14px 18px; border-radius:var(--r-md); border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:16px; text-align:center;
+    margin-bottom:.8rem; transition:.2s;
+  }
+  #nameField:focus{outline:none; border-color:var(--brand-a); box-shadow:0 0 0 3px rgba(124,92,255,.2);}
+  #nameField:disabled{opacity:.4;}
+  #enterBtn{
+    width:100%; padding:14px; border:none; border-radius:var(--r-md); cursor:pointer; font-family:inherit;
+    font-weight:800; font-size:16px; color:#fff; background:linear-gradient(135deg,var(--brand-a),var(--brand-b));
+    transition:.2s; letter-spacing:.3px;
+  }
+  #enterBtn:hover:not(:disabled){filter:brightness(1.08); transform:translateY(-1px);}
+  #enterBtn:disabled{opacity:.45; cursor:not-allowed;}
+  #gateHint{color:var(--bad); font-size:.78rem; min-height:16px; margin-top:.6rem;}
 
-    #messageInput { 
-      flex: 1; 
-      font-size: 16px; 
-      height: 45px;
-      padding: 0 15px;
-      border: 1px solid #eee;
-      border-radius: 25px; 
-      font-family: 'Tajawal', sans-serif; 
-      background: #ffffff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.03); 
-      box-sizing: border-box;
-    }
-    #messageInput:focus { border-color: #3366cc; outline: none; }
-    
-    #sendBtn { 
-      height: 45px;
-      padding: 0 25px; 
-      border: none; 
-      border-radius: 25px; 
-      background: #3366cc; 
-      color: white; 
-      cursor: pointer; 
-      font-family: 'Tajawal', sans-serif;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      box-sizing: border-box;
-    }
+  /* ---------- App shell ---------- */
+  #app{display:flex; flex-direction:column; height:100dvh; opacity:0; transition:opacity .35s ease;}
+  #app.on{opacity:1;}
 
-    #sendBtn:hover { background: #254e99; }
-    
-    #topButtons { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 1000; }
-    .btn { padding: 6px 10px; background: white; border: 1px solid #ccc; border-radius: 20px; cursor: pointer; font-size: 16px; line-height: 1; display: flex; align-items: center; }
-    .btn .count-text { font-size: 14px; margin-right: 4px; }
-    
-    #usersBox, #setVideoModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1003; display: none; max-height: 80vh; overflow-y: auto; }
-    #usersList { max-height: 200px; overflow-y: auto; }
-    .user-item { display: flex; align-items: center; gap: 8px; padding: 5px 2px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
-    .status-indicator { width: 10px; height: 10px; border-radius: 50%; }
-    .status-green { background-color: #28a745; } .status-yellow { background-color: #ffc107; } .status-gray { background-color: #ccc; }
-    
-    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-    #loginBox { background: white; padding: 30px; border-radius: 15px; text-align: center; min-width: 300px; }
-    #usernameInput { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; font-family: 'Tajawal', sans-serif;}
-    #loginBtn { background: #3366cc; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; font-family: 'Tajawal', sans-serif; margin-top: 10px; }
-    
-    #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; display: none; }
-    
-    #pinnedVideoPlayer { 
-      position: fixed; 
-      top: 50px; 
-      left: 50px; 
-      width: clamp(300px, 90vw, 480px); 
-      background: #000; 
-      border: 1px solid #ccc; 
-      border-radius: 8px; 
-      box-shadow: 0 5px 20px rgba(0,0,0,0.4); 
-      z-index: 998; 
-      display: none; 
-      flex-direction: column; 
-      overflow: hidden; 
-    }
-    .video-header { 
-      background-color: #333; 
-      color: white; 
-      padding: 5px 10px; 
-      border-top-left-radius: 7px; 
-      border-top-right-radius: 7px; 
-      cursor: move; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      flex-shrink: 0; 
-      touch-action: none; 
-      font-size: 14px; 
-    }
-    .video-header .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .video-header .reload-btn {
-      background: #28a745;
-      border: none;
-      color: white;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      font-size: 14px;
-      line-height: 20px;
-      text-align: center;
-      transition: all 0.3s;
-    }
-    .video-header .reload-btn:hover {
-      background: #218838;
-      transform: rotate(45deg);
-    }
-    .video-body { 
-      width: 100%; 
-      background: #000; 
-      flex-grow: 1; 
-      position: relative;
-      min-height: 200px;
-    }
-    .video-js .vjs-tech { object-fit: contain; }
-    .close-pinned-video { 
-      background: #d9534f; 
-      border: 1px solid #d43f3a; 
-      color: white; 
-      border-radius: 50%; 
-      width: 22px; 
-      height: 22px; 
-      cursor: pointer; 
-      font-size: 14px; 
-      line-height: 20px; 
-      text-align: center; 
-    }
-    .resize-handle { 
-      position: absolute; 
-      width: 20px; 
-      height: 20px; 
-      bottom: 0; 
-      right: 0; 
-      cursor: nwse-resize; 
-      z-index: 10; 
-      background: rgba(255,255,255,0.1);
-      border-radius: 0 0 8px 0;
-    }
-    .resize-handle::after {
-      content: '↘';
-      color: rgba(255,255,255,0.5);
-      font-size: 16px;
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-    }
-    
-    .connection-status {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      background: rgba(0,0,0,0.7);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      z-index: 5;
-      display: none;
-      pointer-events: none;
-    }
-    .connection-status.show {
-      display: block;
-      animation: fadeInOut 0.5s ease;
-    }
-    .connection-status.connected { background: rgba(40, 167, 69, 0.8); }
-    .connection-status.disconnected { background: rgba(220, 53, 69, 0.8); }
-    .connection-status.reconnecting { background: rgba(255, 193, 7, 0.8); }
-    
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-      100% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
+  #bar{
+    display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--surface-1);
+    border-bottom:1px solid var(--line); flex-shrink:0; flex-wrap:wrap;
+  }
+  #bar .brand{font-weight:800; font-size:1rem; background:linear-gradient(135deg,var(--brand-a),var(--brand-b)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-left:4px;}
+  .pill{
+    display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:99px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:.85rem; font-weight:600;
+    cursor:pointer; transition:.15s;
+  }
+  .pill:hover{border-color:var(--brand-a); background:var(--surface-3);}
+  .pill svg{width:16px; height:16px; fill:currentColor; flex-shrink:0;}
+  .pill.grow{margin-right:auto;}
+  #onlineDot{width:7px; height:7px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok);}
 
-    .video-js.vjs-netflix-theme { background-color: #000; }
-    .vjs-netflix-theme .vjs-control-bar { height: 6em; background: none; background-image: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%); }
-    .vjs-netflix-theme .vjs-big-play-button { display: none !important; }
-    .vjs-netflix-theme .vjs-progress-control { position: absolute; left: 0; right: 0; width: 100%; top: -3em; height: 2.5em; }
-    .vjs-netflix-theme .vjs-progress-holder { height: 0.3em; margin: 1.1em 0; }
-    .vjs-netflix-theme .vjs-play-progress, .vjs-netflix-theme .vjs-load-progress { height: 100%; }
-    .vjs-netflix-theme .vjs-play-progress:before { display: none; }
-    .vjs-netflix-theme .vjs-play-progress { background-color: #e50914; }
-    .vjs-netflix-theme .vjs-load-progress { background: rgba(255, 255, 255, 0.4); }
-    .vjs-netflix-theme .vjs-time-control { line-height: 5em; padding: 0 1em; }
-    .vjs-netflix-theme .vjs-remaining-time { line-height: 5em; }
-    .vjs-netflix-theme .vjs-button > .vjs-icon-placeholder:before { font-size: 2.2em; line-height: 2.2; }
-    .vjs-netflix-theme .vjs-volume-panel, .vjs-netflix-theme .vjs-fullscreen-control { margin-right: 1em; }
-    .video-js.vjs-netflix-theme.vjs-has-started.vjs-user-inactive .vjs-control-bar { opacity: 0; visibility: hidden; }
+  #feed{
+    flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:6px;
+    overscroll-behavior:contain; scroll-behavior:smooth;
+  }
+  .bubble{
+    display:flex; align-items:flex-start; gap:9px; padding:8px 10px; border-radius:var(--r-sm);
+    animation:rise .25s ease; transition:background .15s; max-width:100%;
+  }
+  .bubble:hover{background:rgba(255,255,255,.025);}
+  @keyframes rise{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .tag{
+    font-weight:700; font-size:.78rem; color:var(--brand-b); background:rgba(34,211,238,.1);
+    border:1px solid rgba(34,211,238,.25); padding:2px 9px; border-radius:99px; white-space:nowrap; flex-shrink:0;
+  }
+  .bubble-text{flex:1; line-height:1.55; word-break:break-word; font-size:.95rem; padding-top:1px;}
+  .bubble-time{font-size:.7rem; color:var(--ink-faint); white-space:nowrap; flex-shrink:0; padding-top:2px;}
+  .bubble-del{
+    background:none; border:none; color:var(--ink-faint); cursor:pointer; opacity:0; transition:.15s;
+    border-radius:50%; padding:3px; display:flex; flex-shrink:0;
+  }
+  .bubble:hover .bubble-del{opacity:.6;}
+  .bubble-del:hover{opacity:1 !important; color:var(--bad); background:rgba(248,113,113,.15);}
+  .bubble-del svg{width:14px; height:14px;}
+  .note{
+    align-self:center; font-size:.72rem; color:var(--ink-faint); background:var(--surface-2);
+    border:1px solid var(--line); padding:4px 12px; border-radius:99px; animation:rise .3s ease;
+  }
 
-    .video-selector-bar { display: flex; gap: 6px; padding: 8px; background: #111; overflow-x: auto; border-bottom: 1px solid #333; max-height: 60px; }
-    .video-selector-btn { flex-shrink: 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-family: 'Tajawal', sans-serif; transition: all 0.2s; }
-    .video-selector-btn:hover { background: #333; border-color: #666; }
-    .video-selector-btn.active { background: #e50914; border-color: #c40812; }
-    
-    /* ===== مشغل الفيديو الخام ===== */
-    .raw-video-player {
-      width: 100%;
-      height: 100%;
-      background: #000;
-      display: block;
-    }
-    .raw-video-player::-webkit-media-controls {
-      background: rgba(0,0,0,0.7);
-    }
-  </style>
+  #typeline{
+    padding:2px 16px; font-size:.75rem; color:var(--ink-dim); min-height:22px; opacity:0; transition:.2s;
+    display:flex; align-items:center; gap:6px; flex-shrink:0;
+  }
+  #typeline.on{opacity:1;}
+  .tdots{display:inline-flex; gap:3px;}
+  .tdots i{width:4px; height:4px; border-radius:50%; background:var(--brand-b); display:block; animation:tb 1.3s infinite;}
+  .tdots i:nth-child(2){animation-delay:.15s;} .tdots i:nth-child(3){animation-delay:.3s;}
+  @keyframes tb{0%,80%,100%{opacity:.25; transform:translateY(0);}40%{opacity:1; transform:translateY(-2px);}}
+
+  #dock{
+    display:flex; gap:10px; padding:12px 14px; background:var(--surface-1); border-top:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #textField{
+    flex:1; font-size:16px; padding:12px 18px; border-radius:99px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; transition:.15s;
+  }
+  #textField:focus{outline:none; border-color:var(--brand-a);}
+  #textField:disabled{opacity:.4;}
+  #shootBtn{
+    border:none; border-radius:99px; padding:0 22px; cursor:pointer; font-family:inherit; font-weight:700;
+    color:#fff; background:linear-gradient(135deg,var(--brand-a),var(--brand-b)); display:flex; align-items:center;
+    gap:6px; transition:.15s;
+  }
+  #shootBtn:disabled{opacity:.4; cursor:not-allowed;}
+  #shootBtn:hover:not(:disabled){filter:brightness(1.1);}
+  #shootBtn svg{width:18px; height:18px; fill:currentColor;}
+
+  /* ---------- Overlay / modal ---------- */
+  .veil{
+    position:fixed; inset:0; background:rgba(6,7,12,.7); backdrop-filter:blur(3px); z-index:900;
+    display:flex; align-items:center; justify-content:center; animation:rise .15s ease;
+  }
+  .sheet{
+    width:90%; max-width:380px; background:var(--surface-1); border:1px solid var(--line);
+    border-radius:var(--r-md); padding:1.4rem; box-shadow:var(--shadow); animation:pop .18s ease;
+  }
+  @keyframes pop{from{transform:scale(.94); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .sheet h3{font-size:1.05rem; margin-bottom:1rem; text-align:center; color:var(--brand-b);}
+  .sheet input{
+    width:100%; padding:12px 14px; border-radius:var(--r-sm); border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; text-align:center; margin-bottom:12px;
+  }
+  .sheet input:focus{outline:none; border-color:var(--brand-a);}
+  .sheet small{display:block; text-align:center; color:var(--ink-faint); margin-bottom:14px; font-size:.72rem;}
+  .btn-full{
+    width:100%; padding:12px; border:none; border-radius:var(--r-sm); cursor:pointer; font-family:inherit;
+    font-weight:700; color:#fff; background:linear-gradient(135deg,var(--brand-a),var(--brand-b)); transition:.15s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-full:hover{filter:brightness(1.08);}
+  .btn-full:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-full.ghost{background:var(--surface-3); color:var(--ink);}
+  .btn-full.danger{background:var(--bad);}
+  .row2{display:flex; gap:10px;}
+  .spin{
+    width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff; animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #roster{max-height:280px; overflow-y:auto; margin:-4px;}
+  .roster-row{display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid var(--line); font-size:.9rem;}
+  .roster-row:last-child{border-bottom:none;}
+  .beacon{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .beacon.up{background:var(--ok); box-shadow:0 0 6px var(--ok);}
+  .beacon.idle{background:var(--warn); box-shadow:0 0 6px var(--warn);}
+  .beacon.down{background:var(--ink-faint);}
+  .roster-status{margin-right:auto; font-size:.72rem; color:var(--ink-faint);}
+  .roster-empty{text-align:center; color:var(--ink-faint); font-size:.85rem; padding:14px 0;}
+
+  /* ---------- Video widget ---------- */
+  #screen{
+    position:fixed; top:64px; left:20px; width:380px; min-width:280px; max-width:92vw;
+    background:#000; border-radius:var(--r-md); overflow:hidden auto; z-index:850; display:none;
+    flex-direction:column; box-shadow:var(--shadow); border:1px solid var(--line); resize:both; touch-action:none;
+    transition:height .25s ease, min-height .25s ease;
+  }
+  #screen.small{height:44px !important; min-height:44px !important;}
+  .screen-head{
+    background:var(--surface-1); padding:8px 12px; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; cursor:move; touch-action:none; border-bottom:1px solid var(--line); min-height:38px;
+  }
+  .screen-head .who{font-size:.8rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .screen-actions{display:flex; gap:4px; align-items:center; flex-shrink:0;}
+  .screen-btn{
+    background:none; border:none; color:var(--ink-dim); cursor:pointer; padding:5px; border-radius:50%;
+    display:flex; transition:.15s;
+  }
+  .screen-btn:hover{color:var(--brand-b); background:rgba(255,255,255,.1);}
+  .screen-btn.danger:hover{color:var(--bad);}
+  .screen-btn svg{width:16px; height:16px;}
+  .screen-body{position:relative; width:100%; flex:1; min-height:190px; background:#000;}
+  .screen-body.hide{display:none;}
+  .screen-msg{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; padding:14px;
+    background:rgba(0,0,0,.82); border-radius:var(--r-sm); z-index:5; max-width:80%;
+  }
+  .screen-msg.err{color:var(--bad); font-size:.85rem;}
+  .screen-msg.wait{color:var(--brand-b);}
+  .screen-tab{
+    display:none; padding:6px; text-align:center; font-size:.72rem; color:var(--ink-dim); cursor:pointer;
+    background:var(--surface-1); border-top:1px solid var(--line);
+  }
+  .screen-tab:hover{background:var(--surface-2);}
+
+  #bringBack{
+    position:fixed; bottom:78px; left:20px; z-index:840; display:none; border:none; cursor:pointer;
+    color:#fff; font-family:inherit; font-weight:700; padding:10px 18px; border-radius:99px;
+    background:linear-gradient(135deg,var(--brand-a),var(--brand-b)); box-shadow:var(--shadow); transition:.15s;
+  }
+  #bringBack:hover{transform:scale(1.04);}
+
+  #pulseBar{
+    position:fixed; bottom:78px; right:50%; transform:translateX(50%); z-index:900; display:none;
+    padding:7px 16px; border-radius:99px; font-size:.75rem; background:var(--surface-1); border:1px solid var(--line);
+  }
+  #pulseBar.show{display:block;}
+  #pulseBar.up{border-color:var(--ok); color:var(--ok);}
+  #pulseBar.down{border-color:var(--bad); color:var(--bad);}
+
+  #toastHost{position:fixed; bottom:130px; right:50%; transform:translateX(50%); z-index:9500; display:flex; flex-direction:column; gap:8px; align-items:center;}
+  .toast{
+    background:var(--surface-2); border:1px solid var(--line); color:var(--ink); padding:10px 20px;
+    border-radius:99px; font-size:.82rem; box-shadow:var(--shadow); animation:rise .2s ease;
+  }
+
+  @media (max-width:600px){
+    #screen{width:94vw; left:3vw; top:8px;}
+    #bringBack{left:3vw;}
+    .pill span.lbl{display:none;}
+  }
+</style>
 </head>
 <body>
 
-  <div id="loginScreen">
-    <div id="loginBox">
-      <h2>👋 أهلاً بك في الدردشة</h2>
-      <input type="text" id="usernameInput" placeholder="اكتب اسمك (بدون رموز خاصة)" maxlength="15" autofocus>
-      <button id="loginBtn">دخول</button>
-    </div>
+<div id="gate">
+  <div id="gateCard">
+    <div class="logo">💬</div>
+    <h1>صفحة نوف </h1>
+    <p class="sub">دردشة لحظية بسيطة وسريعة</p>
+    <div id="gateStatus"><span class="dot-pulse"></span><span id="gateStatusTxt">جاري الاتصال بالخادم...</span></div>
+    <input id="nameField" type="text" placeholder="اسمك المستعار" maxlength="15" autocomplete="off" disabled>
+    <button id="enterBtn" disabled>ادخل الدردشة</button>
+    <div id="gateHint"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="bar">
+    <span class="brand">نوف</span>
+    <button class="pill" id="videoPillBtn">
+      <svg viewBox="0 0 24 24"><path d="M17 10.5V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3.5l4 4V6.5l-4 4Z"/></svg>
+      <span class="lbl">فيديو</span>
+    </button>
+    <button class="pill grow" id="rosterPillBtn">
+      <span id="onlineDot"></span>
+      <span id="onlineCount">0</span>
+      <span class="lbl">متصل</span>
+    </button>
+    <button class="pill" id="bringBackTop" style="display:none;">🎬 <span class="lbl">إظهار الفيديو</span></button>
   </div>
 
-  <div id="chat-container" style="display: none;">
-    <div id="topButtons">
-      <div class="btn" id="setVideoBtn" title="تثبيت فيديو">📺</div>
-      <div class="btn" id="onlineListBtn" title="المتصلين الآن">👥 <span id="count" class="count-text">0</span></div>
-    </div>
-    
-    <div id="pinnedVideoPlayer"></div>
-    
-    <div id="setVideoModal">
-      <h4>تثبيت فيديو للجميع</h4>
-      <input type="text" id="videoUrlInput" placeholder="ادخل رابط يوتيوب، تويتر، M3U، أو MP4"/>
-      <button id="submitVideoUrlBtn">تثبيت</button>
-    </div>
-    
-    <div id="usersBox">
-      <h4>المتصلين الآن</h4>
-      <div id="usersList"></div>
-    </div>
-    
-    <div id="overlay"></div>
-    
-    <div id="messages" role="list"></div>
-    
-    <form id="inputArea">
-      <button type="submit" id="sendBtn">إرسال</button>
-      <input type="text" id="messageInput" placeholder="اكتب رسالتك..." autocomplete="off" />
-    </form>
-  </div>
+  <div id="feed"></div>
+  <div id="typeline"></div>
+
+  <form id="dock" autocomplete="off">
+    <input id="textField" type="text" placeholder="اكتب رسالتك..." maxlength="500" disabled>
+    <button id="shootBtn" type="submit" disabled>
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      إرسال
+    </button>
+  </form>
+
+  <div id="screen"></div>
+</div>
+
+<button id="bringBack">🎬 إظهار الفيديو</button>
+<div id="pulseBar"></div>
+<div id="modalHost"></div>
+<div id="toastHost"></div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const firebaseConfig = {
-      apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
-      authDomain: "studio-4914109762-6a41f.firebaseapp.com",
-      databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
-      projectId: "studio-4914109762-6a41f",
-      storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
-      messagingSenderId: "134781295069",
-      appId: "1:134781295069:web:3c020f46f8fbeaca24fe34"
+(function(){
+"use strict";
+
+/* ============================================================
+   ICONS
+============================================================ */
+const ICO = {
+  close:  '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>',
+  trash:  '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>',
+  shrink: '<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg>',
+};
+
+/* ============================================================
+   TINY DOM / UTIL HELPERS
+============================================================ */
+const $ = (sel, root=document) => root.querySelector(sel);
+const esc = (s) => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+const nowMs = () => Date.now();
+
+function toast(msg){
+  const host = $('#toastHost');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  host.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2600);
+}
+
+/* ============================================================
+   FIREBASE CORE
+============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDttyEjbuC6gzHxuN0IR8yi_9fO-aFyW64",
+  authDomain: "studio-4914109762-6a41f.firebaseapp.com",
+  databaseURL: "https://studio-4914109762-6a41f-default-rtdb.firebaseio.com",
+  projectId: "studio-4914109762-6a41f",
+  storageBucket: "studio-4914109762-6a41f.firebasestorage.app",
+  messagingSenderId: "134781295069"
+};
+
+const Core = {
+  db: null, auth: null, uid: null, timeOffset: 0,
+  init(){
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    this.db = firebase.database();
+    this.auth = firebase.auth();
+  },
+  async signIn(){
+    const cred = await this.auth.signInAnonymously();
+    this.uid = cred.user.uid;
+    return this.uid;
+  },
+  watchOffset(cb){
+    this.db.ref('.info/serverTimeOffset').on('value', snap => {
+      this.timeOffset = snap.val() || 0;
+      cb && cb(this.timeOffset);
+    });
+  },
+  serverNow(){ return nowMs() + this.timeOffset; },
+  stamp(){ return firebase.database.ServerValue.TIMESTAMP; }
+};
+
+/* ============================================================
+   PRESENCE  (online users, heartbeat, cleanup, typing)
+============================================================ */
+const IDLE_MS = 60000, GONE_MS = 120000, TYPE_TIMEOUT = 3000, HEARTBEAT = 30000, SWEEP = 60000;
+
+const Presence = {
+  username:'', ref:null, typingRef:null,
+  heartbeatTimer:null, sweepTimer:null, typingClearTimer:null, isTyping:false,
+  onlineListener:null, typingUpdateListener:null,
+  countCb:null, typersCb:null,
+
+  start(username){
+    this.username = username;
+    this.ref = Core.db.ref(`online/${Core.uid}`);
+    this.typingRef = Core.db.ref('typing');
+
+    this.ref.set({ username, lastActive: Core.stamp(), uid: Core.uid });
+    this.ref.onDisconnect().remove();
+    this.typingRef.child(Core.uid).onDisconnect().remove();
+
+    this.heartbeatTimer = setInterval(() => {
+      this.ref.update({ lastActive: Core.stamp() });
+    }, HEARTBEAT);
+
+    this.sweepTimer = setInterval(() => this.sweepInactive(), SWEEP);
+
+    this.onlineListener = Core.db.ref('online').on('value', snap => {
+      this.countCb && this.countCb(snap.numChildren());
+    });
+
+    this.typingUpdateListener = this.typingRef.on('value', snap => {
+      const data = snap.val() || {};
+      const others = Object.keys(data).filter(k => k !== Core.uid).map(k => data[k]).filter(Boolean);
+      this.typersCb && this.typersCb(others);
+    });
+  },
+
+  sweepInactive(){
+    const now = Core.serverNow();
+    Core.db.ref('online').once('value', snap => {
+      snap.forEach(child => {
+        if (child.key === Core.uid) return;
+        const d = child.val();
+        if (now - (d.lastActive || 0) > GONE_MS) child.ref.remove();
+      });
+    });
+  },
+
+  markTyping(hasText){
+    if (!this.typingRef) return;
+    if (hasText && !this.isTyping){
+      this.isTyping = true;
+      this.typingRef.child(Core.uid).set(this.username);
+      clearTimeout(this.typingClearTimer);
+      this.typingClearTimer = setTimeout(() => this.clearTyping(), TYPE_TIMEOUT);
+    } else if (!hasText){
+      this.clearTyping();
+    }
+  },
+  clearTyping(){
+    if (this.isTyping && this.typingRef){
+      this.typingRef.child(Core.uid).remove();
+      this.isTyping = false;
+    }
+    clearTimeout(this.typingClearTimer);
+  },
+
+  listRoster(cb){
+    // returns an unsubscribe function
+    const ref = Core.db.ref('online');
+    const listener = ref.on('value', snap => cb(snap.val() || {}));
+    return () => ref.off('value', listener);
+  },
+
+  dispose(){
+    clearInterval(this.heartbeatTimer);
+    clearInterval(this.sweepTimer);
+    clearTimeout(this.typingClearTimer);
+    if (this.onlineListener) Core.db.ref('online').off('value', this.onlineListener);
+    if (this.typingUpdateListener && this.typingRef) this.typingRef.off('value', this.typingUpdateListener);
+    if (this.typingRef) this.typingRef.child(Core.uid).remove();
+    if (this.ref) this.ref.remove();
+  }
+};
+
+/* ============================================================
+   MESSAGES
+============================================================ */
+const Messages = {
+  ref:null, addListener:null, removeListener:null,
+  seen:new Set(), timeEls:new Map(), timeObserver:null, tickTimer:null,
+
+  init(feedEl){
+    this.feedEl = feedEl;
+    this.timeObserver = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) this.refreshOne(e.target.dataset.mkey); });
+    }, { threshold:.1 });
+    // periodic refresh so visible timestamps stay accurate even without scrolling
+    this.tickTimer = setInterval(() => {
+      this.timeEls.forEach((v, key) => {
+        const rect = v.el.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < window.innerHeight) this.refreshOne(key);
+      });
+    }, 30000);
+  },
+
+  start(onAdd, onRemove){
+    this.ref = Core.db.ref('messages');
+    const q = this.ref.orderByChild('timestamp').limitToLast(100);
+    this.addListener = q.on('child_added', snap => {
+      if (this.seen.has(snap.key)) return;
+      this.seen.add(snap.key);
+      onAdd(snap.key, snap.val());
+    });
+    this.removeListener = this.ref.on('child_removed', snap => {
+      this.seen.delete(snap.key);
+      const meta = this.timeEls.get(snap.key);
+      if (meta) { this.timeObserver.unobserve(meta.el); this.timeEls.delete(snap.key); }
+      onRemove(snap.key);
+    });
+  },
+
+  send(username, text){
+    return this.ref.push({ user: username, text, timestamp: Core.stamp(), uid: Core.uid });
+  },
+
+  remove(key){ this.ref.child(key).remove(); },
+
+  registerTimeEl(key, timestamp, el){
+    this.timeEls.set(key, { el, timestamp });
+    this.timeObserver.observe(el);
+    this.refreshOne(key);
+  },
+
+  refreshOne(key){
+    const meta = this.timeEls.get(key);
+    if (!meta) return;
+    meta.el.textContent = relTime(meta.timestamp);
+  },
+
+  dispose(){
+    if (this.addListener) this.ref.off('child_added', this.addListener);
+    if (this.removeListener) this.ref.off('child_removed', this.removeListener);
+    clearInterval(this.tickTimer);
+    if (this.timeObserver) this.timeObserver.disconnect();
+    this.seen.clear();
+    this.timeEls.clear();
+  }
+};
+
+function relTime(ts){
+  if (!ts) return '';
+  const diff = Math.max(0, Math.floor((Core.serverNow() - ts) / 1000));
+  if (diff < 60) return `${diff} ث`;
+  if (diff < 3600) return `منذ ${Math.floor(diff/60)} د`;
+  if (diff < 86400) return `منذ ${Math.floor(diff/3600)} س`;
+  return `منذ ${Math.floor(diff/86400)} ي`;
+}
+
+/* ============================================================
+   VIDEO — url parsing + validation
+============================================================ */
+const VideoParse = {
+  YT: /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+  TW: /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/,
+  FILE: /\.(mp4|webm|ogv|mov)(\?.*)?$/i,
+  HLS_EXT: /\.m3u8(\?.*)?$/i,
+
+  async parse(rawUrl){
+    const url = rawUrl.trim();
+    let m = url.match(this.YT);
+    if (m) return { type:'youtube', id:m[1] };
+    m = url.match(this.TW);
+    if (m) return { type:'twitter', id:m[1] };
+    if (this.FILE.test(url)) return { type:'direct', src:url };
+    // Only trust explicit .m3u8 extension or an obvious /hls/ path segment.
+    // We do NOT pre-validate with a fetch() call: CORS on live/token streams
+    // routinely blocks HEAD/GET requests to otherwise perfectly valid streams,
+    // which used to reject working links. hls.js itself will report a real
+    // error if the stream truly doesn't work.
+    if (this.HLS_EXT.test(url) || /\/hls\//i.test(url)) return { type:'hls', src:url };
+    return null;
+  }
+};
+
+/* ============================================================
+   VIDEO — player widget
+============================================================ */
+class VideoWidget {
+  constructor(container, data, myUid, actions){
+    this.el = container;
+    this.data = data;
+    this.myUid = myUid;
+    this.actions = actions; // { onClose, onMinimize, onRestore }
+    this.videoEl = null;
+    this.hls = null;
+    this.minimized = false;
+    this._render();
+    this._load();
+  }
+
+  _render(){
+    const isOwner = this.data.uid === this.myUid;
+    this.el.innerHTML = `
+      <div class="screen-head">
+        <span class="who">🎬 ${esc(this.data.setBy || '')}</span>
+        <div class="screen-actions">
+          <button class="screen-btn" data-act="min" title="تصغير">${ICO.shrink}</button>
+          ${isOwner ? `<button class="screen-btn danger" data-act="close" title="حذف للجميع">${ICO.close}</button>` : ''}
+        </div>
+      </div>
+      <div class="screen-body" id="scrBody"><div class="screen-msg wait">⏳ جاري التحميل...</div></div>
+      <div class="screen-tab" id="scrTab">⬆ اضغط للتكبير</div>
+    `;
+    this.el.querySelector('[data-act="min"]').onclick = () => { this._toggleMin(true); this.actions.onMinimize(); };
+    const closeBtn = this.el.querySelector('[data-act="close"]');
+    if (closeBtn) closeBtn.onclick = () => this.actions.onClose();
+    this.el.querySelector('#scrTab').onclick = () => { this._toggleMin(false); this.actions.onRestore(); };
+    this._makeDraggable();
+  }
+
+  _toggleMin(min){
+    this.minimized = min;
+    const body = this.el.querySelector('#scrBody');
+    const tab = this.el.querySelector('#scrTab');
+    body.classList.toggle('hide', min);
+    tab.style.display = min ? 'block' : 'none';
+    this.el.classList.toggle('small', min);
+  }
+
+  restoreFromExternal(){ this._toggleMin(false); }
+  minimizeFromExternal(){ this._toggleMin(true); }
+
+  async _load(){
+    const body = this.el.querySelector('#scrBody');
+    if (!body) return;
+    try{
+      if (this.data.type === 'youtube') return this._youtube(body);
+      if (this.data.type === 'twitter') return this._twitter(body);
+      return await this._directOrHls(body);
+    } catch(e){
+      console.error('video load error', e);
+      this._err(body, 'تعذر تحميل المشغل');
+    }
+  }
+
+  _youtube(body){
+    body.innerHTML = `<iframe src="https://www.youtube.com/embed/${this.data.id}?autoplay=1&mute=1&controls=1&playsinline=1&enablejsapi=1"
+      allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen
+      style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>`;
+  }
+  _twitter(body){
+    body.innerHTML = `<iframe src="https://twitframe.com/show?url=https://twitter.com/i/status/${this.data.id}"
+      style="position:absolute;inset:0;width:100%;height:100%;border:0;" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  }
+
+  async _directOrHls(body){
+    body.innerHTML = '';
+    const v = document.createElement('video');
+    v.setAttribute('playsinline','');
+    v.setAttribute('crossorigin','anonymous');
+    v.controls = true;
+    v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;background:#000;';
+    body.appendChild(v);
+    this.videoEl = v;
+
+    const looksLikeHls = this.data.type === 'hls' || /\.m3u8(\?.*)?$/i.test(this.data.src);
+    if (looksLikeHls){
+      this._hls(v, this.data.src, body);
+      return;
+    }
+    v.src = this.data.src;
+    try { await v.play(); this._hideMsg(); }
+    catch { this._err(body, 'لا يمكن تشغيل هذا الفيديو، تأكد من الرابط.'); }
+  }
+
+  _hls(video, url, body){
+    if (window.Hls && Hls.isSupported()){
+      const hls = new Hls({ enableWorker:true, lowLatencyMode:false });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
+        if (data && data.details && data.details.live) hls.config.lowLatencyMode = true;
+        this._hideMsg();
+        video.play().catch(()=>{});
+      });
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR){
+          this._err(body, 'تعذر الاتصال بالبث، تأكد من الرابط.');
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR){
+          try { hls.recoverMediaError(); } catch { this._err(body, 'فشل استرداد البث'); }
+        } else {
+          this._err(body, 'فشل تشغيل البث');
+          hls.destroy();
+        }
+      });
+      this.hls = hls;
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')){
+      video.src = url;
+      video.play().catch(()=>{});
+      this._hideMsg();
+    } else {
+      this._err(body, 'المتصفح لا يدعم هذا النوع من البث');
+    }
+  }
+
+  _hideMsg(){ const m = this.el.querySelector('.screen-msg'); if (m) m.style.display='none'; }
+  _err(body, msg){ body.innerHTML = `<div class="screen-msg err">⚠️<br>${esc(msg)}</div>`; }
+
+  _makeDraggable(){
+    const head = this.el.querySelector('.screen-head');
+    if (!head) return;
+    let dragging=false, sx=0, sy=0, ox=0, oy=0;
+    const start = (e) => {
+      if (e.target.closest('button')) return;
+      dragging = true;
+      const p = e.touches ? e.touches[0] : e;
+      sx = p.clientX; sy = p.clientY;
+      const r = this.el.getBoundingClientRect();
+      ox = r.left; oy = r.top;
+      document.addEventListener('mousemove', move);
+      document.addEventListener('touchmove', move, { passive:false });
+      document.addEventListener('mouseup', end);
+      document.addEventListener('touchend', end);
+      e.preventDefault();
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const move = (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      const p = e.touches ? e.touches[0] : e;
+      let nx = ox + (p.clientX - sx), ny = oy + (p.clientY - sy);
+      nx = Math.min(Math.max(nx, 8), window.innerWidth - this.el.offsetWidth - 8);
+      ny = Math.min(Math.max(ny, 8), window.innerHeight - this.el.offsetHeight - 8);
+      this.el.style.left = nx+'px'; this.el.style.top = ny+'px'; this.el.style.right='auto';
+    };
+    const end = () => {
+      dragging = false;
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('mouseup', end);
+      document.removeEventListener('touchend', end);
+    };
+    head.addEventListener('mousedown', start);
+    head.addEventListener('touchstart', start, { passive:false });
+  }
 
-    let username = '';
-    let userRef, messagesRef, onlineRef, pinnedVideoRef;
-    let serverTimeOffset = 0;
-    let videoPlayerInstance = null;
-    let currentVideoIndex = 0;
-    let currentVideosList = [];
-    let currentVideoUrl = '';
-    let currentVideoType = '';
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    let reconnectTimer = null;
-    let isReconnecting = false;
-    let hlsInstance = null;
-    let rawVideoElement = null;
-    let connectionCheckInterval = null;
+  dispose(){
+    if (this.hls){ try{ this.hls.destroy(); }catch{} this.hls=null; }
+    if (this.videoEl){ try{ this.videoEl.pause(); this.videoEl.src=''; this.videoEl.load(); }catch{} this.videoEl=null; }
+    this.el.innerHTML = '';
+  }
+}
 
-    const loginScreen = document.getElementById('loginScreen');
-    const usernameInput = document.getElementById('usernameInput');
-    const loginBtn = document.getElementById('loginBtn');
-    const chatContainer = document.getElementById('chat-container');
-    const messagesDiv = document.getElementById("messages");
-    const messageInput = document.getElementById("messageInput");
-    const onlineListBtn = document.getElementById("onlineListBtn");
-    const setVideoBtn = document.getElementById("setVideoBtn");
-    const usersBox = document.getElementById("usersBox");
-    const setVideoModal = document.getElementById("setVideoModal");
-    const videoUrlInput = document.getElementById("videoUrlInput");
-    const submitVideoUrlBtn = document.getElementById("submitVideoUrlBtn");
-    const pinnedVideoPlayer = document.getElementById("pinnedVideoPlayer");
-    const overlay = document.getElementById("overlay");
+/* ============================================================
+   VIDEO — controller (talks to Firebase + VideoWidget)
+============================================================ */
+const VideoBoard = {
+  ref:null, listener:null, widget:null, minimized:false,
 
-    function escapeHtml(unsafe) { 
-      if(!unsafe) return ""; 
-      return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); 
-    }
-    function scrollToBottom() { messagesDiv.scrollTop = messagesDiv.scrollHeight; }
+  start(containerEl, restoreBtnEls, myUid){
+    this.container = containerEl;
+    this.restoreBtnEls = restoreBtnEls;
+    this.myUid = myUid;
+    this.ref = Core.db.ref('pinned_video');
+    this.listener = this.ref.on('value', snap => this._render(snap.val()));
+  },
 
-    function getYoutubeVideoId(url) {
-      if (!url) return null;
-      const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-      return (url.match(regex) || [])[1] || null;
-    }
-    function getTweetId(url) {
-      if (!url) return null;
-      const regex = /(?:https?:\/\/)?(?:www\.)?(?:twitter|x)\.com\/(?:\w+)\/status\/(\d+)/;
-      return (url.match(regex) || [])[1] || null;
-    }
-    function isDirectVideo(url) {
-      return /\.(mp4|webm|ogv|m3u8|m3u)$/i.test(url);
-    }
+  set(data){ this.ref.set(data); },
+  clear(){ this.ref.remove(); },
 
-    // ===== حالة الاتصال =====
-    function showConnectionStatus(message, type = 'connected') {
-      const statusEl = document.querySelector('.connection-status');
-      if (!statusEl) return;
-      statusEl.textContent = message;
-      statusEl.className = `connection-status show ${type}`;
-      clearTimeout(statusEl._timeout);
-      if (type === 'connected') {
-        statusEl._timeout = setTimeout(() => statusEl.classList.remove('show'), 3000);
-      }
+  _render(data){
+    if (this.widget) { this.widget.dispose(); this.widget = null; }
+    this.container.innerHTML = '';
+    this.minimized = false;
+    this.container.classList.remove('small');
+
+    if (!data){
+      this.container.style.display = 'none';
+      this._showRestoreBtns(false);
+      return;
     }
 
-    // ===== تشغيل البث الخام (Raw Stream) مباشرة =====
-    function playRawStream(container, url) {
-      // تنظيف أي مشغل سابق
-      if (hlsInstance) {
-        hlsInstance.destroy();
-        hlsInstance = null;
-      }
-      if (videoPlayerInstance) {
-        videoPlayerInstance.dispose();
-        videoPlayerInstance = null;
-      }
-      if (rawVideoElement) {
-        rawVideoElement.pause();
-        rawVideoElement.remove();
-        rawVideoElement = null;
-      }
-      if (connectionCheckInterval) {
-        clearInterval(connectionCheckInterval);
-        connectionCheckInterval = null;
-      }
+    this.container.style.display = 'flex';
+    this._showRestoreBtns(false);
 
-      // إنشاء عنصر فيديو عادي
-      const videoEl = document.createElement('video');
-      videoEl.className = 'raw-video-player';
-      videoEl.controls = true;
-      videoEl.autoplay = true;
-      videoEl.muted = true;
-      videoEl.playsinline = true;
-      videoEl.style.width = '100%';
-      videoEl.style.height = '100%';
-      videoEl.style.background = '#000';
-      
-      // تعيين المصدر
-      videoEl.src = url;
-      videoEl.load();
-
-      // إضافة حالة الاتصال
-      const statusDiv = document.createElement('div');
-      statusDiv.className = 'connection-status';
-      statusDiv.textContent = '⏳ جاري التحميل...';
-      container.appendChild(statusDiv);
-      
-      // إضافة الفيديو
-      container.appendChild(videoEl);
-      rawVideoElement = videoEl;
-
-      // محاولة التشغيل
-      videoEl.play().catch(() => {
-        showConnectionStatus('⚠️ اضغط تشغيل للمتابعة', 'reconnecting');
-      });
-
-      // مراقبة الأخطاء
-      videoEl.addEventListener('error', (e) => {
-        console.error('خطأ في البث:', e);
-        if (videoEl.networkState === 2 || videoEl.networkState === 3) {
-          showConnectionStatus('⚠️ انقطاع البث، جاري إعادة المحاولة...', 'reconnecting');
-          if (!isReconnecting) {
-            scheduleReconnectRaw(videoEl, url);
-          }
-        }
-      });
-
-      // مراقبة التوقف
-      videoEl.addEventListener('stalled', () => {
-        if (!videoEl.paused && videoEl.readyState < 3) {
-          showConnectionStatus('⚠️ توقف البث، جاري الاسترداد...', 'reconnecting');
-          if (!isReconnecting) {
-            scheduleReconnectRaw(videoEl, url);
-          }
-        }
-      });
-
-      // مراقبة دورية لحالة الاتصال
-      connectionCheckInterval = setInterval(() => {
-        if (videoEl.readyState < 2 && !videoEl.paused && !videoEl.ended) {
-          showConnectionStatus('⚠️ انقطاع البث...', 'reconnecting');
-          if (!isReconnecting) {
-            scheduleReconnectRaw(videoEl, url);
-          }
-        }
-      }, 5000);
-
-      // عند نجاح التحميل
-      videoEl.addEventListener('loadeddata', () => {
-        showConnectionStatus('✅ بث مباشر', 'connected');
-        videoEl.play().catch(() => {});
-      });
-
-      return videoEl;
-    }
-
-    // ===== إعادة الاتصال للبث الخام =====
-    function scheduleReconnectRaw(videoElement, url) {
-      if (isReconnecting) return;
-      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        showConnectionStatus('❌ فشل إعادة الاتصال بعد 5 محاولات', 'disconnected');
-        return;
-      }
-      
-      isReconnecting = true;
-      reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
-      
-      showConnectionStatus(`⏳ إعادة محاولة (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`, 'reconnecting');
-      
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(() => {
-        try {
-          // إعادة تحميل المصدر
-          videoElement.src = url + '?t=' + Date.now();
-          videoElement.load();
-          videoElement.play().catch(() => {});
-          
-          isReconnecting = false;
-          reconnectAttempts = 0;
-          showConnectionStatus('✅ تمت إعادة الاتصال', 'connected');
-        } catch (e) {
-          isReconnecting = false;
-          scheduleReconnectRaw(videoElement, url);
-        }
-      }, delay);
-    }
-
-    // ===== إعادة تحميل البث =====
-    function reloadRawStream(videoElement, url) {
-      if (!videoElement) return;
-      showConnectionStatus('🔄 جاري تحديث البث...', 'reconnecting');
-      reconnectAttempts = 0;
-      isReconnecting = false;
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-      
-      videoElement.src = url + '?t=' + Date.now();
-      videoElement.load();
-      videoElement.play().catch(() => {});
-      showConnectionStatus('✅ تم تحديث البث', 'connected');
-    }
-
-    // ===== تشغيل HLS عبر hls.js =====
-    function playHlsStream(container, url) {
-      // تنظيف
-      if (rawVideoElement) {
-        rawVideoElement.pause();
-        rawVideoElement.remove();
-        rawVideoElement = null;
-      }
-      if (videoPlayerInstance) {
-        videoPlayerInstance.dispose();
-        videoPlayerInstance = null;
-      }
-      if (connectionCheckInterval) {
-        clearInterval(connectionCheckInterval);
-        connectionCheckInterval = null;
-      }
-
-      const videoEl = document.createElement('video');
-      videoEl.className = 'raw-video-player';
-      videoEl.controls = true;
-      videoEl.autoplay = true;
-      videoEl.muted = true;
-      videoEl.playsinline = true;
-      videoEl.style.width = '100%';
-      videoEl.style.height = '100%';
-      videoEl.style.background = '#000';
-      
-      const statusDiv = document.createElement('div');
-      statusDiv.className = 'connection-status';
-      statusDiv.textContent = '⏳ جاري تحميل البث...';
-      container.appendChild(statusDiv);
-      
-      container.appendChild(videoEl);
-      rawVideoElement = videoEl;
-
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backbufferLength: 30,
-          maxBufferLength: 30,
-          liveSyncDuration: 3,
-          liveMaxLatencyDuration: 10,
+    this.widget = new VideoWidget(this.container, data, this.myUid, {
+      onClose: () => {
+        if (data.uid !== this.myUid) return;
+        confirmModal('حذف الفيديو للجميع؟', () => {
+          this.clear();
+          systemNote('🗑️ تم إزالة الفيديو');
         });
-        hlsInstance = hls;
-        hls.loadSource(url);
-        hls.attachMedia(videoEl);
+      },
+      onMinimize: () => { this.minimized = true; this._showRestoreBtns(true); systemNote('📹 تم تصغير الفيديو'); },
+      onRestore: () => { this.minimized = false; this._showRestoreBtns(false); }
+    });
+  },
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          showConnectionStatus('✅ بث HLS', 'connected');
-          videoEl.play().catch(() => {});
-        });
+  restoreFromButton(){
+    this.minimized = false;
+    this._showRestoreBtns(false);
+    if (this.widget) this.widget.restoreFromExternal();
+  },
 
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              showConnectionStatus('⚠️ انقطاع الشبكة، محاولة إعادة الاتصال...', 'reconnecting');
-              if (!isReconnecting) {
-                scheduleReconnectRaw(videoEl, url);
-              }
-            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-              hls.recoverMediaError();
-            }
-          }
-        });
-      } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        videoEl.src = url;
-        videoEl.load();
-        videoEl.play().catch(() => {});
-      }
+  _showRestoreBtns(show){
+    this.restoreBtnEls.forEach(el => el.style.display = show ? 'flex' : 'none');
+  },
 
-      return videoEl;
-    }
+  dispose(){
+    if (this.listener) this.ref.off('value', this.listener);
+    if (this.widget) this.widget.dispose();
+  }
+};
 
-    // ===== إنشاء مشغل الفيديو حسب النوع =====
-    function createVideoPlayer(container, videoSource, videoType, isYoutube) {
-      // تنظيف شامل
-      if (hlsInstance) {
-        hlsInstance.destroy();
-        hlsInstance = null;
-      }
-      if (videoPlayerInstance) {
-        videoPlayerInstance.dispose();
-        videoPlayerInstance = null;
-      }
-      if (rawVideoElement) {
-        rawVideoElement.pause();
-        rawVideoElement.remove();
-        rawVideoElement = null;
-      }
-      if (connectionCheckInterval) {
-        clearInterval(connectionCheckInterval);
-        connectionCheckInterval = null;
-      }
-      reconnectAttempts = 0;
-      isReconnecting = false;
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
+/* ============================================================
+   MODALS / TOASTS
+============================================================ */
+function openModal(titleHtml, bodyHtml){
+  const host = $('#modalHost');
+  const veil = document.createElement('div');
+  veil.className = 'veil';
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet';
+  sheet.innerHTML = `<h3>${titleHtml}</h3>${bodyHtml}`;
+  veil.appendChild(sheet);
+  host.appendChild(veil);
 
-      container.innerHTML = '';
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
 
-      // يوتيوب
-      if (isYoutube) {
-        const videoEl = document.createElement('video-js');
-        videoEl.className = 'vjs-netflix-theme';
-        container.appendChild(videoEl);
-        
-        videoPlayerInstance = videojs(videoEl, {
-          autoplay: true,
-          muted: true,
-          controls: true,
-          aspectRatio: '16:9',
-          playsinline: true,
-          techOrder: ['youtube'],
-          sources: [{ type: 'video/youtube', src: videoSource }]
-        });
-        return videoPlayerInstance;
-      }
+  let cleanupFns = [];
+  function close(){
+    document.removeEventListener('keydown', onKey);
+    cleanupFns.forEach(fn => { try{ fn(); }catch{} });
+    veil.remove();
+  }
+  const firstFocusable = sheet.querySelector('input, button');
+  if (firstFocusable) setTimeout(() => firstFocusable.focus(), 80);
 
-      // روابط HLS (.m3u8)
-      if (videoType === 'application/x-mpegURL' || videoSource.includes('.m3u8') || videoSource.includes('.m3u')) {
-        return playHlsStream(container, videoSource);
-      }
+  return {
+    sheet, close,
+    onClose(fn){ cleanupFns.push(fn); }
+  };
+}
 
-      // روابط خام (Raw) - تحتوي على /play/ أو مفتاح طويل
-      if (videoSource.includes('/play/') || videoSource.match(/[a-zA-Z0-9_-]{40,}/)) {
-        return playRawStream(container, videoSource);
-      }
+function confirmModal(message, onYes){
+  const m = openModal('تأكيد', `
+    <p style="text-align:center;margin-bottom:18px;font-size:.95rem;">${esc(message)}</p>
+    <div class="row2">
+      <button class="btn-full danger" id="mYes" style="flex:1">نعم</button>
+      <button class="btn-full ghost" id="mNo" style="flex:1">إلغاء</button>
+    </div>
+  `);
+  $('#mYes', m.sheet).onclick = () => { m.close(); onYes(); };
+  $('#mNo', m.sheet).onclick = () => m.close();
+}
 
-      // فيديو مباشر عادي (MP4, WebM)
-      const videoEl = document.createElement('video');
-      videoEl.className = 'raw-video-player';
-      videoEl.controls = true;
-      videoEl.autoplay = true;
-      videoEl.muted = true;
-      videoEl.playsinline = true;
-      videoEl.style.width = '100%';
-      videoEl.style.height = '100%';
-      videoEl.style.background = '#000';
-      videoEl.src = videoSource;
-      videoEl.load();
-      
-      container.appendChild(videoEl);
-      rawVideoElement = videoEl;
-      
-      videoEl.play().catch(() => {});
-      
-      // مراقبة الأخطاء
-      videoEl.addEventListener('error', () => {
-        if (videoEl.networkState === 2) {
-          showConnectionStatus('⚠️ انقطاع البث...', 'reconnecting');
-          if (!isReconnecting) {
-            scheduleReconnectRaw(videoEl, videoSource);
-          }
-        }
-      });
-      
-      return videoEl;
-    }
-
-    // ===== دوال الشات =====
-    function addMessageToUI(key, { user, text, time, timestamp }) {
-      const div = document.createElement("div");
-      div.className = "msg";
-      div.id = `msg-${key}`;
-      
-      const timeElement = document.createElement("span");
-      timeElement.className = "time";
-      timeElement.id = `time-${key}`;
-      
-      updateTimeDisplay(key, timestamp, timeElement);
-      
-      div.innerHTML = `
-        <span class="user">${escapeHtml(user)}</span>
-        <span style="flex:1; word-break: break-word;">${escapeHtml(text)}</span>
-      `;
-      
-      div.appendChild(timeElement);
-      messagesDiv.appendChild(div);
-      scrollToBottom();
-      
-      setInterval(() => { updateTimeDisplay(key, timestamp, timeElement); }, 60000);
-    }
-
-    function updateTimeDisplay(key, timestamp, timeElement) {
-      if (!timestamp) return;
-      const now = Date.now() + serverTimeOffset;
-      const messageTime = timestamp + serverTimeOffset;
-      const diffMs = now - messageTime;
-      const diffSec = Math.floor(diffMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHours = Math.floor(diffMin / 60);
-      const diffDays = Math.floor(diffHours / 24);
-      const diffWeeks = Math.floor(diffDays / 7);
-      const diffMonths = Math.floor(diffDays / 30);
-      const diffYears = Math.floor(diffDays / 365);
-      
-      let timeText = "";
-      if (diffSec < 5) timeText = "الآن";
-      else if (diffSec < 60) timeText = "ثواني";
-      else if (diffMin < 2) timeText = "د1";
-      else if (diffMin < 60) timeText = `د${diffMin}`;
-      else if (diffHours < 24) timeText = `س${diffHours}`;
-      else if (diffDays < 7) timeText = `ي${diffDays}`;
-      else if (diffWeeks < 4) timeText = `أ${diffWeeks}`;
-      else if (diffMonths < 12) timeText = `ش${diffMonths}`;
-      else timeText = `ع${diffYears}`;
-      timeElement.textContent = timeText;
-    }
-
-    function addNotification(text) {
-      const div = document.createElement("div");
-      div.className = "sys";
-      div.textContent = text;
-      messagesDiv.appendChild(div);
-      scrollToBottom();
-    }
-
-    function renderUsersList(users) {
-      const list = document.getElementById("usersList");
-      list.innerHTML = '';
-      const now = Date.now() + serverTimeOffset;
-      Object.keys(users).forEach(uName => {
-        const uData = users[uName];
-        const div = document.createElement("div");
-        div.className = "user-item";
-        let colorClass = 'status-green';
-        const diff = now - (uData.lastActive || 0);
-        if (diff > 60000) colorClass = 'status-gray';
-        else if (diff > 30000) colorClass = 'status-yellow';
-        div.innerHTML = `<span class="status-indicator ${colorClass}"></span><span>${escapeHtml(uName)}</span>`;
-        list.appendChild(div);
-      });
-    }
-
-    function closeAllModals() {
-      usersBox.style.display = 'none';
-      setVideoModal.style.display = 'none';
-      overlay.style.display = 'none';
-    }
-
-    function makeDraggable(element, handle) {
-      let offsetX = 0, offsetY = 0;
-      let isDragging = false;
-      const getPointerPosition = (e) => e.touches ? e.touches[0] : e;
-      const onDragStart = (e) => {
-        isDragging = true;
-        const pointer = getPointerPosition(e);
-        offsetX = pointer.clientX - element.offsetLeft;
-        offsetY = pointer.clientY - element.offsetTop;
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('touchmove', onDragMove, { passive: false });
-        document.addEventListener('mouseup', onDragEnd);
-        document.addEventListener('touchend', onDragEnd);
-      };
-      const onDragMove = (e) => {
-        if (isDragging) {
-          e.preventDefault();
-          const pointer = getPointerPosition(e);
-          element.style.left = (pointer.clientX - offsetX) + "px";
-          element.style.top = (pointer.clientY - offsetY) + "px";
-        }
-      };
-      const onDragEnd = () => {
-        isDragging = false;
-        document.removeEventListener('mousemove', onDragMove);
-        document.removeEventListener('touchmove', onDragMove);
-        document.removeEventListener('mouseup', onDragEnd);
-        document.removeEventListener('touchend', onDragEnd);
-      };
-      handle.addEventListener('mousedown', onDragStart);
-      handle.addEventListener('touchstart', onDragStart, { passive: false });
-    }
-
-    function makeResizable(element, handle) {
-      let initialWidth, initialHeight, initialX, initialY;
-      const getPointerPosition = (e) => e.touches ? e.touches[0] : e;
-      function onResizeStart(e) {
-        if(e.type === 'touchstart') e.preventDefault();
-        const pointer = getPointerPosition(e);
-        initialWidth = element.offsetWidth;
-        initialHeight = element.offsetHeight;
-        initialX = pointer.clientX;
-        initialY = pointer.clientY;
-        document.addEventListener('mousemove', onResizeMove);
-        document.addEventListener('touchmove', onResizeMove, { passive: false });
-        document.addEventListener('mouseup', onResizeEnd);
-        document.addEventListener('touchend', onResizeEnd);
-      }
-      function onResizeMove(e) {
-        if(e.type === 'touchmove') e.preventDefault();
-        const pointer = getPointerPosition(e);
-        const newWidth = initialWidth + (pointer.clientX - initialX);
-        const newHeight = initialHeight + (pointer.clientY - initialY);
-        if (newWidth > 300) { element.style.width = newWidth + 'px'; }
-        if (newHeight > 200) { element.style.height = newHeight + 'px'; }
-      }
-      function onResizeEnd() {
-        document.removeEventListener('mousemove', onResizeMove);
-        document.removeEventListener('touchmove', onResizeMove);
-        document.removeEventListener('mouseup', onResizeEnd);
-        document.removeEventListener('touchend', onResizeEnd);
-      }
-      handle.addEventListener('mousedown', onResizeStart);
-      handle.addEventListener('touchstart', onResizeStart, { passive: false });
-    }
-
-    // ===== تسجيل الدخول =====
-    function attemptLogin() {
-      let inputName = usernameInput.value.trim();
-      const invalidChars = /[.#$\\[\\]]/;
-      if (invalidChars.test(inputName)) { alert("الاسم لا يجب أن يحتوي على رموز خاصة"); return; }
-      if (inputName.length < 2) { alert("الاسم قصير جداً"); return; }
-      username = inputName;
-      userRef = db.ref("online/" + username);
-      messagesRef = db.ref("messages");
-      onlineRef = db.ref("online");
-      pinnedVideoRef = db.ref("pinned_video");
-      startChat();
-    }
-
-    loginBtn.onclick = attemptLogin;
-    usernameInput.onkeypress = (e) => { if (e.key === 'Enter') attemptLogin(); };
-
-    // ===== تشغيل الشات =====
-    function startChat() {
-      loginScreen.style.display = 'none';
-      chatContainer.style.display = 'flex';
-
-      db.ref('.info/serverTimeOffset').on('value', snap => serverTimeOffset = snap.val() || 0);
-
-      userRef.set({ lastActive: firebase.database.ServerValue.TIMESTAMP });
-      userRef.onDisconnect().remove();
-
-      setInterval(() => {
-        userRef.update({ lastActive: firebase.database.ServerValue.TIMESTAMP });
-      }, 60000);
-
-      setInterval(() => {
-         const now = Date.now() + serverTimeOffset;
-         onlineRef.once('value', snap => {
-             snap.forEach(child => {
-                 if (now - child.val().lastActive > 90000) child.ref.remove();
-             });
-         });
-      }, 60000);
-
-      onlineListBtn.onclick = (e) => { e.stopPropagation(); usersBox.style.display = 'block'; overlay.style.display = 'block'; };
-      setVideoBtn.onclick = (e) => { e.stopPropagation(); setVideoModal.style.display = 'block'; overlay.style.display = 'block'; };
-      overlay.onclick = closeAllModals;
-      
-      document.getElementById("inputArea").onsubmit = (e) => {
-        e.preventDefault();
-        const text = messageInput.value.trim();
-        if (!text) return;
-        const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-        messagesRef.push({ user: username, text: text, time: time, timestamp: firebase.database.ServerValue.TIMESTAMP });
-        messageInput.value = "";
-        userRef.update({ lastActive: firebase.database.ServerValue.TIMESTAMP });
-        scrollToBottom();
-      };
-
-      messagesRef.limitToLast(100).on("child_added", snap => addMessageToUI(snap.key, snap.val()));
-      messagesRef.on("child_removed", snap => {
-        const msgElement = document.getElementById(`msg-${snap.key}`);
-        if (msgElement) { msgElement.style.opacity = '0'; setTimeout(() => msgElement.remove(), 300); }
-      });
-
-      onlineRef.on("value", snap => {
-        document.getElementById("count").textContent = snap.numChildren();
-        renderUsersList(snap.val() || {});
-      });
-
-      // ===== معالجة تثبيت الفيديو =====
-      submitVideoUrlBtn.onclick = () => {
-        const url = videoUrlInput.value.trim();
-        if (!url) return;
-        const youtubeId = getYoutubeVideoId(url);
-        const tweetId = getTweetId(url);
-        
-        if (youtubeId) {
-          pinnedVideoRef.set({ type: 'youtube', id: youtubeId, setBy: username });
-        } else if (tweetId) {
-          pinnedVideoRef.set({ type: 'twitter', id: tweetId, setBy: username });
-        } else if (url.toLowerCase().includes('.m3u') || url.toLowerCase().includes('.m3u8')) {
-          pinnedVideoRef.set({ type: 'hls', url: url, setBy: username });
-        } else if (isDirectVideo(url)) {
-          pinnedVideoRef.set({ type: 'direct', url: url, setBy: username });
-        } else if (url.includes('/play/') || url.match(/[a-zA-Z0-9_-]{40,}/)) {
-          // الروابط الخام مثل رابط VLC
-          pinnedVideoRef.set({ type: 'raw', url: url, setBy: username });
-        } else {
-          alert("الرابط غير مدعوم.");
-          return;
-        }
-        videoUrlInput.value = "";
-        closeAllModals();
-      };
-
-      // ===== مراقبة التغيير في الفيديو المثبت =====
-      pinnedVideoRef.on("value", async (snap) => {
-        const data = snap.val();
-        
-        // تنظيف شامل
-        if (hlsInstance) {
-          hlsInstance.destroy();
-          hlsInstance = null;
-        }
-        if (videoPlayerInstance) {
-          videoPlayerInstance.dispose();
-          videoPlayerInstance = null;
-        }
-        if (rawVideoElement) {
-          rawVideoElement.pause();
-          rawVideoElement.remove();
-          rawVideoElement = null;
-        }
-        if (connectionCheckInterval) {
-          clearInterval(connectionCheckInterval);
-          connectionCheckInterval = null;
-        }
-        reconnectAttempts = 0;
-        isReconnecting = false;
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-          reconnectTimer = null;
-        }
-        
-        pinnedVideoPlayer.innerHTML = '';
-        currentVideosList = [];
-        currentVideoIndex = 0;
-
-        if (data) {
-          pinnedVideoPlayer.style.display = 'flex';
-          const header = document.createElement('div');
-          header.className = 'video-header';
-          header.innerHTML = `<span>📺 بث مباشر - ${data.setBy}</span>`;
-          
-          const controlsDiv = document.createElement('div');
-          controlsDiv.className = 'header-controls';
-          
-          const reloadBtn = document.createElement('button');
-          reloadBtn.className = 'reload-btn';
-          reloadBtn.innerHTML = '🔄';
-          reloadBtn.title = 'تحديث البث';
-          reloadBtn.onclick = (e) => {
-            e.stopPropagation();
-            const videoEl = pinnedVideoPlayer.querySelector('video');
-            if (videoEl) {
-              const src = videoEl.src || currentVideoUrl;
-              if (src) {
-                reloadRawStream(videoEl, src);
-              }
-            }
-          };
-          controlsDiv.appendChild(reloadBtn);
-          
-          const closeBtn = document.createElement('button');
-          closeBtn.className = 'close-pinned-video';
-          closeBtn.innerHTML = '✖';
-          closeBtn.onclick = () => pinnedVideoRef.remove();
-          controlsDiv.appendChild(closeBtn);
-          
-          header.appendChild(controlsDiv);
-          
-          const body = document.createElement('div');
-          body.className = 'video-body';
-          
-          const resizeHandle = document.createElement('div');
-          resizeHandle.className = 'resize-handle';
-          
-          pinnedVideoPlayer.appendChild(header);
-          pinnedVideoPlayer.appendChild(body);
-          pinnedVideoPlayer.appendChild(resizeHandle);
-          
-          makeDraggable(pinnedVideoPlayer, header);
-          makeResizable(pinnedVideoPlayer, resizeHandle);
-
-          if (data.type === 'youtube') {
-            currentVideoUrl = `https://www.youtube.com/watch?v=${data.id}`;
-            currentVideoType = 'video/youtube';
-            createVideoPlayer(body, currentVideoUrl, 'video/youtube', true);
-          } else if (data.type === 'hls') {
-            currentVideoUrl = data.url;
-            currentVideoType = 'application/x-mpegURL';
-            createVideoPlayer(body, currentVideoUrl, 'application/x-mpegURL', false);
-          } else if (data.type === 'raw') {
-            currentVideoUrl = data.url;
-            currentVideoType = 'video/raw';
-            createVideoPlayer(body, currentVideoUrl, 'video/raw', false);
-          } else if (data.type === 'direct') {
-            currentVideoUrl = data.url;
-            currentVideoType = 'video/mp4';
-            createVideoPlayer(body, currentVideoUrl, 'video/mp4', false);
-          } else if (data.type === 'twitter') {
-            const videos = await fetchTwitterVideos(data.id);
-            if (!videos || !videos.length) {
-              body.innerHTML = `<p style="color:white;padding:10px;">تعذر جلب فيديو تويتر (قد يكون خاصاً أو محذوفاً).</p>`;
-            } else {
-              currentVideosList = videos;
-              currentVideoIndex = 0;
-              currentVideoUrl = videos[0].url;
-              currentVideoType = 'video/mp4';
-              createVideoPlayer(body, currentVideoUrl, 'video/mp4', false);
-              if (videos.length > 1) {
-                createVideoSelector(body, videos);
-              }
-            }
-          }
-          addNotification(`${data.setBy} قام بتشغيل فيديو`);
-        } else {
-          pinnedVideoPlayer.style.display = 'none';
-        }
-      });
-    }
-
-    // ===== دوال إضافية =====
-    function createVideoSelector(container, videos) {
-      const selectorBar = document.createElement('div');
-      selectorBar.className = 'video-selector-bar';
-
-      videos.forEach((v, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'video-selector-btn';
-        btn.textContent = `مقطع ${idx + 1}`;
-        if (idx === 0) btn.classList.add('active');
-        
-        btn.onclick = (e) => {
-          e.preventDefault();
-          if (idx !== currentVideoIndex) {
-            currentVideoIndex = idx;
-            // تنظيف وإعادة تشغيل
-            if (rawVideoElement) {
-              rawVideoElement.pause();
-              rawVideoElement.remove();
-              rawVideoElement = null;
-            }
-            createVideoPlayer(container, v.url, 'video/mp4', false);
-            document.querySelectorAll('.video-selector-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-          }
-        };
-        selectorBar.appendChild(btn);
-      });
-
-      container.appendChild(selectorBar);
-    }
-
-    async function fetchTwitterVideos(tweetId) {
-      const videos = [];
-      try {
-        const fxRes = await fetch(`https://api.fxtwitter.com/status/${tweetId}`);
-        if (fxRes.ok) {
-          const fxData = await fxRes.json();
-          const tweet = fxData.tweet || {};
-          const media = tweet.media || {};
-          if (Array.isArray(media.videos)) {
-            media.videos.forEach(v => { if (v && v.url) videos.push({ url: v.url, thumb: v.thumbnail_url || '', type: v.type || 'video', provider: 'fxtwitter' }); });
-          } else if (Array.isArray(media.all)) {
-            media.all.filter(m => m.type === 'video' || m.type === 'gif').forEach(v => { if (v && v.url) videos.push({ url: v.url, thumb: v.thumbnail_url || '', type: v.type || 'video', provider: 'fxtwitter' }); });
-          }
-        }
-      } catch (e) { console.warn('FixTweet error:', e); }
-
-      if (!videos.length) {
-        try {
-          const vxRes = await fetch(`https://api.vxtwitter.com/i/status/${tweetId}`);
-          if (vxRes.ok) {
-            const vxData = await vxRes.json();
-            const mediaExt = vxData.media_extended || [];
-            mediaExt.forEach(m => { if (m && m.url) videos.push({ url: m.url, thumb: m.thumbnail_url || '', type: m.type || 'video', provider: 'vxtwitter' }); });
-          }
-        } catch (e) { console.warn('vxtwitter error:', e); }
-      }
-      return videos;
-    }
+function rosterModal(){
+  const m = openModal('👥 المتصلون الآن', `<div id="rosterList"><p class="roster-empty">جاري التحميل...</p></div>`);
+  const listEl = $('#rosterList', m.sheet);
+  const unsubscribe = Presence.listRoster(users => {
+    const now = Core.serverNow();
+    const rows = Object.values(users).sort((a,b)=>(b.lastActive||0)-(a.lastActive||0));
+    if (!rows.length){ listEl.innerHTML = '<p class="roster-empty">لا يوجد متصلون</p>'; return; }
+    listEl.innerHTML = rows.map(u => {
+      const diff = now - (u.lastActive || 0);
+      let cls='up', label='متصل';
+      if (diff > GONE_MS){ cls='down'; label='غير متصل'; }
+      else if (diff > IDLE_MS){ cls='idle'; label='خامل'; }
+      return `<div class="roster-row"><span class="beacon ${cls}"></span><span>${esc(u.username||'مجهول')}</span><span class="roster-status">${label}</span></div>`;
+    }).join('');
   });
+  m.onClose(unsubscribe);
+}
+
+function videoModal(onSubmit){
+  const m = openModal('📺 تثبيت فيديو', `
+    <input id="vUrl" type="text" placeholder="أدخل رابط الفيديو">
+    <small>YouTube · Twitter/X · HLS (.m3u8) · MP4 مباشر</small>
+    <button class="btn-full" id="vGo">🎬 تثبيت الفيديو</button>
+  `);
+  const btn = $('#vGo', m.sheet), input = $('#vUrl', m.sheet);
+  const trigger = async () => {
+    const url = input.value.trim();
+    if (!url){ toast('⚠️ أدخل رابطاً'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> جارٍ التحقق...';
+    const ok = await onSubmit(url);
+    if (ok){ m.close(); }
+    else {
+      btn.disabled = false;
+      btn.innerHTML = '🎬 تثبيت الفيديو';
+      toast('⚠️ الرابط غير مدعوم. جرب YouTube، Twitter، HLS أو MP4 مباشر');
+    }
+  };
+  btn.onclick = trigger;
+  input.onkeypress = (e) => { if (e.key === 'Enter') trigger(); };
+}
+
+function systemNote(text){
+  const feed = $('#feed');
+  const div = document.createElement('div');
+  div.className = 'note';
+  div.textContent = text;
+  feed.appendChild(div);
+  Feed.maybeScroll();
+}
+
+/* ============================================================
+   FEED RENDERING
+============================================================ */
+const Feed = {
+  el:null, atBottom:true,
+  init(el){
+    this.el = el;
+    el.addEventListener('scroll', () => {
+      this.atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+    });
+  },
+  scrollToBottom(){ requestAnimationFrame(() => { this.el.scrollTop = this.el.scrollHeight; }); },
+  maybeScroll(){ if (this.atBottom) this.scrollToBottom(); },
+
+  addBubble(key, data, myUid){
+    const user = esc(data.user || 'مجهول');
+    const text = esc(data.text || '');
+    const ts = data.timestamp || null;
+    const div = document.createElement('div');
+    div.className = 'bubble';
+    div.id = `b-${key}`;
+    div.innerHTML = `
+      <span class="tag">${user}</span>
+      <span class="bubble-text">${text}</span>
+      <span class="bubble-time"></span>
+    `;
+    const timeEl = div.querySelector('.bubble-time');
+    if (ts){
+      Messages.registerTimeEl(key, ts, timeEl);
+      timeEl.dataset.mkey = key;
+    }
+    if (data.uid === myUid){
+      const del = document.createElement('button');
+      del.className = 'bubble-del';
+      del.innerHTML = ICO.trash;
+      del.setAttribute('aria-label','حذف الرسالة');
+      del.onclick = () => confirmModal('حذف الرسالة؟', () => Messages.remove(key));
+      div.appendChild(del);
+    }
+    this.el.appendChild(div);
+    this.maybeScroll();
+  },
+
+  removeBubble(key){
+    const el = document.getElementById(`b-${key}`);
+    if (!el) return;
+    el.style.transition = 'opacity .25s, transform .25s';
+    el.style.opacity = '0';
+    el.style.transform = 'scale(.92)';
+    setTimeout(() => el.remove(), 250);
+  }
+};
+
+/* ============================================================
+   CONNECTION STATUS
+============================================================ */
+const Connection = {
+  first:true,
+  watch(loggedInGetter){
+    Core.db.ref('.info/connected').on('value', snap => {
+      const up = snap.val() === true;
+      const bar = $('#pulseBar');
+      bar.textContent = up ? '🟢 متصل' : '🔴 غير متصل';
+      bar.className = 'show ' + (up ? 'up' : 'down');
+      if (up){
+        setTimeout(() => bar.classList.remove('show'), 2600);
+        if (!this.first && loggedInGetter()) systemNote('🟢 تم استعادة الاتصال');
+        this.first = false;
+      } else {
+        systemNote('🔴 انقطع الاتصال... جارٍ المحاولة');
+      }
+    });
+  }
+};
+
+/* ============================================================
+   APP BOOTSTRAP
+============================================================ */
+const App = {
+  username:'', loggedIn:false,
+
+  async boot(){
+    Core.init();
+    Feed.init($('#feed'));
+    Messages.init($('#feed'));
+    this._bindGate();
+    try{
+      $('#gateStatusTxt').textContent = 'جاري المصادقة...';
+      await Core.signIn();
+      $('#gateStatusTxt').textContent = 'تم! أدخل اسمك للمتابعة';
+      $('#gate .dot-pulse').style.background = 'var(--ok)';
+      $('#nameField').disabled = false;
+      $('#enterBtn').disabled = false;
+      $('#nameField').focus();
+    } catch(err){
+      console.error(err);
+      $('#gateStatusTxt').textContent = 'فشلت المصادقة: ' + (err.message || '');
+      $('#gateStatusTxt').style.color = 'var(--bad)';
+    }
+  },
+
+  _bindGate(){
+    $('#enterBtn').onclick = () => this._tryEnter();
+    $('#nameField').onkeypress = (e) => { if (e.key === 'Enter') this._tryEnter(); };
+  },
+
+  _tryEnter(){
+    if (this.loggedIn || $('#enterBtn').disabled) return;
+    const name = $('#nameField').value.trim();
+    const hint = $('#gateHint');
+    if (/[.#$\[\]\/]/.test(name)){ hint.textContent = '⚠️ لا تستخدم الرموز: . # $ [ ] /'; return; }
+    if (name.length < 2){ hint.textContent = '⚠️ الاسم قصير جداً'; return; }
+    if (name.length > 15){ hint.textContent = '⚠️ الاسم طويل جداً'; return; }
+    hint.textContent = '';
+    this.username = name;
+    this._enter();
+  },
+
+  _enter(){
+    this.loggedIn = true;
+    $('#gate').style.display = 'none';
+    $('#app').classList.add('on');
+    $('#textField').disabled = false;
+    $('#shootBtn').disabled = false;
+
+    Core.watchOffset();
+
+    Presence.countCb = (n) => { $('#onlineCount').textContent = n; };
+    Presence.start(this.username);
+
+    Messages.start(
+      (key, data) => Feed.addBubble(key, data, Core.uid),
+      (key) => Feed.removeBubble(key)
+    );
+
+    VideoBoard.start($('#screen'), [$('#bringBack'), $('#bringBackTop')], Core.uid);
+
+    Connection.watch(() => this.loggedIn);
+
+    this._bindDock();
+    this._bindTopBar();
+
+    systemNote(`👋 مرحباً ${this.username}!`);
+  },
+
+  _bindDock(){
+    $('#dock').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = $('#textField');
+      const text = input.value.trim();
+      if (!text) return;
+      if (text.length > 500){ systemNote('⚠️ الرسالة طويلة جداً (الحد 500 حرف)'); return; }
+      const btn = $('#shootBtn');
+      btn.disabled = true;
+      setTimeout(() => btn.disabled = false, 800);
+      Messages.send(this.username, text).catch(err => {
+        console.error(err);
+        systemNote('❌ فشل إرسال الرسالة');
+        btn.disabled = false;
+      });
+      input.value = '';
+      Presence.markTyping(false);
+    });
+
+    const tline = $('#typeline');
+    $('#textField').addEventListener('input', (e) => Presence.markTyping(e.target.value.trim().length > 0));
+    $('#textField').addEventListener('blur', () => Presence.markTyping(false));
+
+    Presence.typersCb = (names) => {
+      if (!names.length){ tline.classList.remove('on'); tline.innerHTML=''; return; }
+      let phrase;
+      if (names.length === 1) phrase = `${esc(names[0])} يكتب`;
+      else if (names.length === 2) phrase = `${esc(names[0])} و${esc(names[1])} يكتبان`;
+      else phrase = `${names.length} أشخاص يكتبون`;
+      tline.innerHTML = `${phrase}<span class="tdots"><i></i><i></i><i></i></span>`;
+      tline.classList.add('on');
+    };
+  },
+
+  _bindTopBar(){
+    $('#rosterPillBtn').onclick = () => rosterModal();
+    $('#videoPillBtn').onclick = () => videoModal(async (url) => {
+      const parsed = await VideoParse.parse(url);
+      if (!parsed) return false;
+      parsed.setBy = this.username;
+      parsed.uid = Core.uid;
+      VideoBoard.set(parsed);
+      systemNote(`🎬 ${this.username} ثبت فيديو`);
+      return true;
+    });
+    $('#bringBack').onclick = () => VideoBoard.restoreFromButton();
+    $('#bringBackTop').onclick = () => VideoBoard.restoreFromButton();
+  },
+
+  dispose(){
+    this.loggedIn = false;
+    Presence.dispose();
+    Messages.dispose();
+    VideoBoard.dispose();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.boot());
+window.addEventListener('beforeunload', () => App.dispose());
+
+})();
 </script>
 </body>
 </html>
